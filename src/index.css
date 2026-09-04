@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-fallback: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  html[dir="rtl"] {
+    font-family: 'Cairo', var(--font-fallback);
+  }
+
+  html[dir="ltr"] {
+    font-family: 'Inter', var(--font-fallback);
+  }
+
+  html, body {
+    @apply bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen min-h-[100dvh];
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  #root {
+    @apply w-full min-h-screen min-h-[100dvh] flex flex-col justify-between mx-auto relative overflow-hidden;
+    /* يضمن أن التطبيق يملأ شاشة الهاتف بالكامل بشكل متجاوب */
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.7);
+}
+
+/* Hide scrollbar for clean story lists */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Mobile Safe Areas & Full Viewport Adaptability */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}

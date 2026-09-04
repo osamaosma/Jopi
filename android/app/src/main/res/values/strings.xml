@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Jopi</string>
+    <string name="title_activity_main">Jopi</string>
+    <string name="package_name">com.Jopi.app</string>
+    <string name="custom_url_scheme">com.Jopi.app</string>
+</resources>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ar" dir="rtl" class="dark h-full w-full">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%238B5CF6'/><path d='M50 20 L65 45 L95 50 L72 70 L78 98 L50 82 L22 98 L28 70 L5 50 L35 45 Z' fill='%23F59E0B'/></svg>" />
+    
+    <!-- إعدادات الشاشة الدقيقة للهاتف وتطبيق الهواتف الأصلية -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0f172a" />
+    
+    <title>Nova</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+      html, body, #root {
+        width: 100%;
+        height: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        position: fixed;
+        inset: 0;
+      }
+      #root {
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-900 text-slate-100 antialiased select-none">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
