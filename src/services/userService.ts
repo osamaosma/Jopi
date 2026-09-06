@@ -127,7 +127,6 @@ export class UserService {
 
     const publicUrl = publicUrlData.publicUrl;
 
-    // تحديث رابط الصورة فقط مع الحفاظ على باقي البيانات الحالية
     await this.updateLogProfile(
       user.display_name, 
       user.bio || '', 
@@ -196,6 +195,25 @@ export class UserService {
     }
 
     return data as UserMoment;
+  }
+
+  // --- البحث الحقيقي عن المستخدم عبر الـ ID أو Custom ID في السحابة ---
+  static async searchUserByCustomId(searchQuery: string): Promise<User | null> {
+    const cleanQuery = searchQuery.trim();
+    if (!cleanQuery) return null;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`custom_id.eq.${cleanQuery},id.eq.${cleanQuery}`)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error searching user by ID:', error);
+      return null;
+    }
+
+    return data as User | null;
   }
 
   static getDiscoverableUsers(filters?: FilterPreferences): User[] {

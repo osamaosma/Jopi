@@ -51,6 +51,17 @@ export interface User {
   updated_at: string;
 }
 
+// --- تصدير نموذج طلبات الصداقة والأصدقاء بشكل صريح ---
+export interface FriendRequest {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+  sender?: User;
+  receiver?: User;
+}
+
 export interface Interest {
   id: string;
   name: string;
