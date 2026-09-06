@@ -1,5 +1,5 @@
 // ============================================================================
-// Jopi Current User Profile Screen & Settings (Final Clean & Fixed Version)
+// Jopi Current User Profile Screen & Settings (Clean Final Version)
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -276,12 +276,12 @@ export const ProfileScreen: React.FC = () => {
         fr: { title: 'Conditions d’utilisation', body: 'Bienvenue sur Jopi. En utilisant notre application, vous acceptez pleinement nos conditions d’utilisation.' },
         de: { title: 'Nutzungsbedingungen', body: 'Willkommen bei Jopi. Durch die Nutzung unserer App stimmen Sie den Nutzungsbedingungen voll zu.' },
         ru: { title: 'Условия использования', body: 'Добро пожаловать в Jopi. Используя наше приложение, вы полностью соглашаетесь с условиями использования.' },
-        ur: { title: 'استعمال کی شرائط', body: 'Jopi میں خوش آمدید۔ ہماری ایپ استعمال کرکے آپ تمام شرائط سے اتفاق کرتے ہیں۔' },
+        ur: { title: 'استعمال کی شرائط', body: 'Jopi میں خوش آمدید۔ ہماری ایپ استعمال کرکے آپ تمام شرائط سے اتفاق करते ہیں۔' },
       },
       privacyPolicy: {
         ar: { title: 'سياسة الخصوصية', body: 'نحن في تطبيق Jopi نحرص بصرامة على حماية سرية بياناتك الشخصية ومحادثاتك. لا يتم بيع أو مشاركة أي معلومات خاصة بالمستخدمين مع أي جهات خارجية أبداً.' },
         en: { title: 'Privacy Policy', body: 'At Jopi, we strictly protect the confidentiality of your personal data and chats. User information is never sold or shared with any third party.' },
-        tr: { title: 'Gizlilik Politikası', body: 'Jopi olarak kişisel verilerinizin و sohbetlerinizin gizliliğini kesinlikle koruyoruz. Bilgileriniz asla üçüncü taraflarla paylaşılmaz.' },
+        tr: { title: 'Gizlilik Politikası', body: 'Jopi olarak kişisel verilerinizin ve sohbetlerinizin gizliliğini kesinlikle koruyoruz. Bilgileriniz asla üçüncü taraflarla paylaşılmaz.' },
         es: { title: 'Política de privacidad', body: 'En Jopi protegemos estrictamente la confidencialidad de tus datos personales y chats.' },
         id: { title: 'Kebijakan Privasi', body: 'Di Jopi, kami secara ketat melindungi kerahasiaan data pribadi dan obrolan Anda.' },
         fr: { title: 'Politique de confidentialité', body: 'Chez Jopi, nous protégeons strictement la confidentialité de vos données personnelles.' },
@@ -368,7 +368,7 @@ export const ProfileScreen: React.FC = () => {
             <button onClick={() => setSettingsView('notifications')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><Bell className="w-4 h-4 text-amber-500" /> {t('notifications')}</span><ChevronRight className="w-4 h-4 text-slate-400" /></button>
             <button onClick={() => setSettingsView('language')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><Globe className="w-4 h-4 text-blue-500" /> {t('languageSetting')}</span><div className="flex items-center gap-1.5 text-slate-400"><span className="text-[11px]">{currentLanguageOption.name}</span><ChevronRight className="w-4 h-4" /></div></button>
             <button onClick={() => setSettingsView('chat')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500" /> {t('chatSettings')}</span><ChevronRight className="w-4 h-4 text-slate-400" /></button>
-            <button onClick={() => setSettingsView('privacy')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> {t('privacy')}</span><ChevronRight className="w-4 h-4 text-slate-400" /></button>
+            <button onClick={() => setSettingsView('privacy')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> {t('privacy')}</span><ChevronRight className="w-4 h-4 text-slate-400" /></button>
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -490,31 +490,32 @@ export const ProfileScreen: React.FC = () => {
           )}
         </div>
 
-        {/* زر تعديل الملف الشخصي وزر التوثيق */}
-<div className="flex items-center justify-center gap-2 mt-4">
+        {/* زر تعديل الملف الشخصي وزر التوثيق (بتنسيق مرئي سليم 100%) */}
+        <div className="flex items-center justify-center gap-2 mt-4">
           <button 
             onClick={() => setEditProfileOpen(true)} 
-            className="flex-1 py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-black shadow-lg shadow-brand-500/30 flex items-center justify-center gap-2 transition active:scale-95"
+            style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '10px 16px', borderRadius: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', cursor: 'pointer', border: 'none', fontSize: '13px' }}
           >
-            <Edit3 className="w-4 h-4 text-white" />
-            <span className="text-white font-bold">تعديل الملف الشخصي</span>
+            <Edit3 style={{ width: '16px', height: '16px', color: '#ffffff', flexShrink: 0 }} />
+            <span style={{ color: '#ffffff' }}>تعديل الملف الشخصي</span>
           </button>
 
           {user.is_verified ? (
-            <div className="py-3 px-3 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center justify-center gap-1">
-              <ShieldCheck className="w-4 h-4" />
+            <div style={{ backgroundColor: '#dbeafe', color: '#1d4ed8', padding: '10px 14px', borderRadius: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', whiteSpace: 'nowrap', fontSize: '13px' }}>
+              <ShieldCheck style={{ width: '16px', height: '16px' }} />
               <span>موثق ✓</span>
             </div>
           ) : (
             <button 
               onClick={() => showToast('تم إرسال طلب توثيق الحساب للإدارة بنجاح 🛡️', 'success')} 
-              className="py-3 px-3 rounded-xl border bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95"
+              style={{ backgroundColor: '#f1f5f9', color: '#334155', padding: '10px 14px', borderRadius: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer', border: '1px solid #cbd5e1', whiteSpace: 'nowrap', fontSize: '13px' }}
             >
-              <ShieldCheck className="w-4 h-4" />
-              <span>توثيق</span>
+              <ShieldCheck style={{ width: '16px', height: '16px' }} />
+              <span>طلب توثيق</span>
             </button>
           )}
         </div>
+
       </div>
 
       <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm mb-4 space-y-4">
@@ -562,7 +563,6 @@ export const ProfileScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* زر My Room معدل التسمية */}
       <div className="grid grid-cols-3 gap-2.5 mb-4">
         <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-center shadow-sm">
           <span className="block text-xs font-black text-slate-900 dark:text-white mb-0.5">My Room</span>
@@ -608,7 +608,7 @@ export const ProfileScreen: React.FC = () => {
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">{t('aboutMe')}</h3>
           <button 
             onClick={() => setEditProfileOpen(true)}
-            className="text-[11px] font-bold text-brand-600 hover:underline flex items-center gap-1"
+            className="text-[11px] font-bold text-brand-600 hover:underline flex items-center gap-1 cursor-pointer"
           >
             <Edit3 className="w-3.5 h-3.5" /> تعديل
           </button>
