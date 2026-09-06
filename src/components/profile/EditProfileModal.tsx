@@ -1,14 +1,14 @@
 // ============================================================================
-// MingleUp Edit Profile Modal with Real Image Upload to Supabase Storage
+// Jopi Edit Profile Modal with Real Image Upload to Supabase Storage
 // ============================================================================
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Camera, Loader2, Save, User as UserIcon, MapPin, Briefcase } from 'lucide-react';
+import { X, Camera, Loader2, Save } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { useLang } from '../../context/LangContext';
-import { ImageUploadService } from '../../services/imageUploadService';
+import { UserService } from '../../services/userService';
 
 export const EditProfileModal: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -32,7 +32,6 @@ export const EditProfileModal: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // فحص حجم الملف (أقل من 5 ميجابايت)
     if (file.size > 5 * 1024 * 1024) {
       showToast('حجم الصورة كبير جداً! الحد الأقصى 5 ميجابايت ⚠️', 'warning');
       return;
@@ -41,14 +40,14 @@ export const EditProfileModal: React.FC = () => {
     setIsUploading(true);
     showToast('جاري رفع الصورة إلى السحابة... ⏳', 'info');
 
-    const publicUrl = await ImageUploadService.uploadAvatar(user.id, file);
+    const publicUrl = await UserService.uploadAndSetProfilePhoto(file);
 
     setIsUploading(false);
     if (publicUrl) {
       setProfilePhoto(publicUrl);
       showToast('تم رفع الصورة بنجاح! 📸✨', 'success');
     } else {
-      showToast('فشل في رفع الصورة، تحقق من الاتصال بالإنترنت ❌', 'error');
+      showToast('فشل في رفع الصورة، تحقق من إعدادات حاوية profiles في Supabase ❌', 'error');
     }
   };
 
@@ -57,6 +56,15 @@ export const EditProfileModal: React.FC = () => {
     setIsSaving(true);
 
     try {
+      const successCloud = await UserService.updateLogProfile(
+        displayName.trim(),
+        bio.trim(),
+        city.trim(),
+        country.trim(),
+        jobTitle.trim(),
+        profilePhoto
+      );
+
       await updateUser({
         display_name: displayName.trim(),
         bio: bio.trim(),
@@ -66,8 +74,13 @@ export const EditProfileModal: React.FC = () => {
         profile_photo: profilePhoto,
       });
 
-      showToast('تم حفظ التعديلات بنجاح! ✅', 'success');
-      setEditProfileOpen(false);
+      if (successCloud) {
+        showToast('تم حفظ التعديلات بنجاح! ✅', 'success');
+        setEditProfileOpen(false);
+        window.location.reload();
+      } else {
+        showToast('فشل حفظ البيانات في السحابة', 'error');
+      }
     } catch {
       showToast('حدث خطأ أثناء حفظ البيانات', 'error');
     } finally {
@@ -135,7 +148,7 @@ export const EditProfileModal: React.FC = () => {
                 </button>
               </div>
               <span className="text-[11px] text-slate-400 font-medium mt-2">
-                انقر على أيقونة الكاميرا لرفع صورة حقيقية من هاتفك
+                انقر على أيقونة الكاميرا لاختيار صورة حقيقية من هاتفك
               </span>
             </div>
 
@@ -144,16 +157,14 @@ export const EditProfileModal: React.FC = () => {
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                 الاسم الظاهر
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:border-brand-500 transition"
-                  placeholder="اسمك الظاهر في التطبيق"
-                />
-              </div>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:border-brand-500 transition"
+                placeholder="اسمك الظاهر في التطبيق"
+              />
             </div>
 
             {/* Bio / About */}
@@ -166,7 +177,7 @@ export const EditProfileModal: React.FC = () => {
                 onChange={(e) => setBio(e.target.value)}
                 rows={3}
                 className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs leading-relaxed focus:outline-none focus:border-brand-500 transition resize-none"
-                placeholder="اكتب نبذة مميزة عنك واهتماماتك..."
+                placeholder="اكتب نبذة مميزة عنك..."
               />
             </div>
 
@@ -209,11 +220,11 @@ export const EditProfileModal: React.FC = () => {
                 value={jobTitle}
                 onChange={(e) => setJobTitle(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:border-brand-500 transition"
-                placeholder="مهنتك أو مجال دراستك"
+                placeholder="مهنتك أو مجال عملك"
               />
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Button */}
             <div className="pt-2">
               <button
                 type="submit"

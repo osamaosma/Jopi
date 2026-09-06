@@ -1,5 +1,5 @@
 // ============================================================================
-// Jopi Auth Context (Fixed & Connected to 'users' table)
+// Jopi Auth Context (Fixed & Fully Connected for Profile Updates)
 // ============================================================================
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -21,7 +21,7 @@ interface AuthContextType {
   socialLogin: (provider: 'google' | 'apple') => Promise<{ success: boolean }>;
   logout: () => void;
   deleteAccount: () => void;
-  updateUser: (fields: Partial<User>) => void;
+  updateUser: (fields: Partial<User>) => Promise<void>;
   refreshUser: () => void;
 }
 
@@ -101,7 +101,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAccount = async () => {
     if (user?.id) {
-      // حذف الحساب من جدول users المعتمد
       await supabase.from('users').delete().eq('id', user.id);
     }
     AuthService.deleteAccount();
@@ -110,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     StorageService.set('jopi_is_authenticated', false);
   };
 
+  // تعديل دالة updateUser لضمان دمج البيانات وتحديثها سحابياً ومحلياً فوراً
   const updateUser = async (fields: Partial<User>) => {
     const updated = UserService.updateCurrentUser(fields);
     if (updated) {
@@ -131,7 +131,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           let profile = await DatabaseService.getProfile(session.user.id);
           
           if (!profile && isMounted) {
-            // إنشاء بروفايل أولي وحفظه في جدول users مباشرة
             profile = {
               id: session.user.id,
               custom_id: Math.floor(1000000 + Math.random() * 9000000).toString(),

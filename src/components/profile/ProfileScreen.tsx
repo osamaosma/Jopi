@@ -1,5 +1,5 @@
 // ============================================================================
-// Nova Current User Profile Screen & Settings (Nova Exact Custom Integration)
+// Jopi Current User Profile Screen & Settings (Final Clean & Fixed Version)
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -7,10 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle2, MapPin, Briefcase, Settings, Edit3, 
   ShieldCheck, Heart, MessageCircle, Coins, Copy, Check, 
-  Crown, Globe, ChevronDown, RefreshCw, Moon, Sun, LogOut,
-  Users, Shield, Award, ArrowRight, UserPlus, Flame, Eye, X, CreditCard, Lock,
+  Crown, Globe, RefreshCw, Moon, Sun, LogOut,
+  Users, Shield, ArrowRight, Eye, X, CreditCard, Lock,
   ChevronRight, Bell, ShieldAlert, MessageSquare, Trash2, Info, ToggleLeft, ToggleRight,
-  Activity, FileText, Lock as LockIcon, BookOpen, AlertCircle, Sparkles, ArrowRightLeft, Wallet
+  Activity, Sparkles, ArrowRightLeft, Wallet
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
@@ -24,7 +24,7 @@ import { WalletService } from '../../services/walletService';
 import { WithdrawalModal } from '../wallet/WithdrawalModal';
 
 export const ProfileScreen: React.FC = () => {
-  const { user, updateUser, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { setEditProfileOpen, setActiveTab, showToast, coinBalance, refreshWallet } = useApp();
   const { t, lang, setLang, availableLanguages, currentLanguageOption } = useLang();
   const { isDark, toggleTheme } = useTheme();
@@ -34,7 +34,6 @@ export const ProfileScreen: React.FC = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [converting, setConverting] = useState(false);
   
-  // التنقل بين شاشات الإعدادات الفرعية لتطبيق Nova
   const [showSettingsScreen, setShowSettingsScreen] = useState(false);
   const [settingsView, setSettingsView] = useState<'main' | 'security' | 'notifications' | 'language' | 'chat' | 'privacy' | 'about' | 'terms' | 'privacyPolicy' | 'rules' | 'childPolicy' | 'guidelines' | 'diagnostics'>('main');
   
@@ -42,12 +41,10 @@ export const ProfileScreen: React.FC = () => {
   const [familySubTab, setFamilySubTab] = useState<'chat' | 'tasks' | 'moments'>('chat');
   const [showVisitorsModal, setShowVisitorsModal] = useState(false);
   
-  // حالات مودل شحن الرصيد المباشر
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<any>(null);
   const [purchasing, setPurchasing] = useState(false);
 
-  // حالات تشخيص الشبكة (Network Diagnostics)
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagResult, setDiagResult] = useState<string | null>(null);
 
@@ -108,12 +105,6 @@ export const ProfileScreen: React.FC = () => {
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  const toggleVerification = () => {
-    const nextStatus = !user.is_verified;
-    updateUser({ is_verified: nextStatus });
-    showToast(nextStatus ? 'Verified ✓' : 'Unverified', 'info');
-  };
-
   const handleLanguageSelect = (code: Language) => {
     setLang(code);
     showToast(`Language updated 🌐`, 'success');
@@ -134,7 +125,7 @@ export const ProfileScreen: React.FC = () => {
     setDiagResult(null);
     setTimeout(() => {
       setDiagnosing(false);
-      setDiagResult('All Nova servers are running efficiently. Connection speed is excellent (18ms). No network issues found.');
+      setDiagResult('All Jopi servers are running efficiently. Connection speed is excellent (18ms). No network issues found.');
       showToast('Network diagnostics completed 🚀', 'success');
     }, 1500);
   };
@@ -155,7 +146,6 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  // 1. شاشة الأمان
   if (showSettingsScreen && settingsView === 'security') {
     return (
       <div className="w-full max-w-md mx-auto min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 select-none flex flex-col justify-between">
@@ -175,7 +165,6 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
-  // 2. شاشة الإشعارات
   if (showSettingsScreen && settingsView === 'notifications') {
     return (
       <div className="w-full max-w-md mx-auto min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 select-none flex flex-col justify-between">
@@ -195,7 +184,6 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
-  // 3. شاشة اللغة
   if (showSettingsScreen && settingsView === 'language') {
     return (
       <div className="w-full max-w-md mx-auto min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 select-none flex flex-col justify-between">
@@ -216,7 +204,6 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
-  // 4. شاشة الدردشة
   if (showSettingsScreen && settingsView === 'chat') {
     return (
       <div className="w-full max-w-md mx-auto min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 select-none flex flex-col justify-between">
@@ -234,7 +221,6 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
-  // 5. شاشة الخصوصية
   if (showSettingsScreen && settingsView === 'privacy') {
     return (
       <div className="w-full max-w-md mx-auto min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 select-none flex flex-col justify-between">
@@ -252,7 +238,6 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
-  // 6. شاشة About Nova الرئيسية
   if (showSettingsScreen && settingsView === 'about') {
     return (
       <div className="w-full max-w-md mx-auto min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 select-none flex flex-col justify-between">
@@ -263,8 +248,8 @@ export const ProfileScreen: React.FC = () => {
         </div>
         <div className="flex-1 p-4 space-y-4 overflow-y-auto">
           <div className="text-center py-4">
-            <div className="w-16 h-16 mx-auto rounded-3xl bg-brand-600 text-white flex items-center justify-center font-black text-xl shadow-lg mb-2">Nova</div>
-            <div className="text-xs font-bold text-slate-500">Nova App v1.0.0 (Official)</div>
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-brand-600 text-white flex items-center justify-center font-black text-xl shadow-lg mb-2">Jopi</div>
+            <div className="text-xs font-bold text-slate-500">Jopi App v1.0.0 (Official)</div>
           </div>
           
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -280,66 +265,62 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
-  // 7. شاشات السياسات الديناميكية بناءً على اللغة المختارة (`lang`)
   if (showSettingsScreen && ['terms', 'privacyPolicy', 'rules', 'childPolicy', 'guidelines', 'diagnostics'].includes(settingsView)) {
-    let title = '';
-    let content = '';
-
     const contentDict: Record<string, Record<Language, { title: string; body: string }>> = {
       terms: {
-        ar: { title: 'شروط الاستخدام', body: 'أهلاً بك في منصة Nova. باستخدامك لتطبيقنا فإنك توافق التزماً تاماً على كافة بنود الاستخدام، والتي تشمل الاحترام المتبادل، حظر أي ألفاظ نابية، وعدم إساءة استخدام غرف الدردشة الصوتية أو الرسائل الخاصة.' },
-        en: { title: 'Terms of Service', body: 'Welcome to Nova. By using our app, you fully agree to our terms of service, which include mutual respect, prohibition of abusive language, and avoiding any misuse of voice rooms or private messages.' },
-        tr: { title: 'Kullanım Şartları', body: 'Nova’ya hoş geldiniz. Uygulamamızı kullanarak karşılıklı saygı, argo dil yasağı ve sesli odaların kötüye kullanılmamasını içeren şartları kabul etmiş olursunuz.' },
-        es: { title: 'Términos de servicio', body: 'Bienvenido a Nova. Al usar nuestra app, aceptas los términos de servicio, incluyendo respeto mutuo y prohibición de lenguaje abusivo.' },
-        id: { title: 'Ketentuan Layanan', body: 'Selamat datang di Nova. Dengan menggunakan aplikasi kami, Anda sepenuhnya menyetujui ketentuan layanan kami.' },
-        fr: { title: 'Conditions d’utilisation', body: 'Bienvenue sur Nova. En utilisant notre application, vous acceptez pleinement nos conditions d’utilisation.' },
-        de: { title: 'Nutzungsbedingungen', body: 'Willkommen bei Nova. Durch die Nutzung unserer App stimmen Sie den Nutzungsbedingungen voll zu.' },
-        ru: { title: 'Условия использования', body: 'Добро пожаловать в Nova. Используя наше приложение, вы полностью соглашаетесь с условиями использования.' },
-        ur: { title: 'استعمال کی شرائط', body: 'Nova میں خوش آمدید۔ ہماری ایپ استعمال کرکے آپ تمام شرائط سے اتفاق کرتے ہیں۔' },
+        ar: { title: 'شروط الاستخدام', body: 'أهلاً بك في منصة Jopi. باستخدامك لتطبيقنا فإنك توافق التزماً تاماً على كافة بنود الاستخدام، والتي تشمل الاحترام المتبادل، حظر أي ألفاظ نابية، وعدم إساءة استخدام غرف الدردشة الصوتية أو الرسائل الخاصة.' },
+        en: { title: 'Terms of Service', body: 'Welcome to Jopi. By using our app, you fully agree to our terms of service, which include mutual respect, prohibition of abusive language, and avoiding any misuse of voice rooms or private messages.' },
+        tr: { title: 'Kullanım Şartları', body: 'Jopi’ye hoş geldiniz. Uygulamamızı kullanarak karşılıklı saygı, argo dil yasağı ve sesli odaların kötüye kullanılmamasını içeren şartları kabul etmiş olursunuz.' },
+        es: { title: 'Términos de servicio', body: 'Bienvenido a Jopi. Al usar nuestra app, aceptas los términos de servicio, incluyendo respeto mutuo y prohibición de lenguaje abusivo.' },
+        id: { title: 'Ketentuan Layanan', body: 'Selamat datang di Jopi. Dengan menggunakan aplikasi kami, Anda sepenuhnya menyetujui ketentuan layanan kami.' },
+        fr: { title: 'Conditions d’utilisation', body: 'Bienvenue sur Jopi. En utilisant notre application, vous acceptez pleinement nos conditions d’utilisation.' },
+        de: { title: 'Nutzungsbedingungen', body: 'Willkommen bei Jopi. Durch die Nutzung unserer App stimmen Sie den Nutzungsbedingungen voll zu.' },
+        ru: { title: 'Условия использования', body: 'Добро пожаловать в Jopi. Используя наше приложение, вы полностью соглашаетесь с условиями использования.' },
+        ur: { title: 'استعمال کی شرائط', body: 'Jopi میں خوش آمدید۔ ہماری ایپ استعمال کرکے آپ تمام شرائط سے اتفاق کرتے ہیں۔' },
       },
       privacyPolicy: {
-        ar: { title: 'سياسة الخصوصية', body: 'نحن في تطبيق Nova نحرص بصرامة على حماية سرية بياناتك الشخصية ومحادثاتك. لا يتم بيع أو مشاركة أي معلومات خاصة بالمستخدمين مع أي جهات خارجية أبداً.' },
-        en: { title: 'Privacy Policy', body: 'At Nova, we strictly protect the confidentiality of your personal data and chats. User information is never sold or shared with any third party.' },
-        tr: { title: 'Gizlilik Politikası', body: 'Nova olarak kişisel verilerinizin ve sohbetlerinizin gizliliğini kesinlikle koruyoruz. Bilgileriniz asla üçüncü taraflarla paylaşılmaz.' },
-        es: { title: 'Política de privacidad', body: 'En Nova protegemos estrictamente la confidencialidad de tus datos personales y chats.' },
-        id: { title: 'Kebijakan Privasi', body: 'Di Nova, kami secara ketat melindungi kerahasiaan data pribadi dan obrolan Anda.' },
-        fr: { title: 'Politique de confidentialité', body: 'Chez Nova, nous protégeons strictement la confidentialité de vos données personnelles.' },
-        de: { title: 'Datenschutzrichtlinie', body: 'Bei Nova schützen wir die Vertraulichkeit Ihrer persönlichen Daten strengstens.' },
-        ru: { title: 'Политика конфиденциальности', body: 'В Nova мы строго защищаем конфиденциальность ваших личных данных и чатов.' },
-        ur: { title: 'پرائیویسی پالیسی', body: 'Nova میں ہم آپ کے ذاتی ڈیٹا اور چیٹس کی رازداری کا سختی سے تحفظ کرتے ہیں۔' },
+        ar: { title: 'سياسة الخصوصية', body: 'نحن في تطبيق Jopi نحرص بصرامة على حماية سرية بياناتك الشخصية ومحادثاتك. لا يتم بيع أو مشاركة أي معلومات خاصة بالمستخدمين مع أي جهات خارجية أبداً.' },
+        en: { title: 'Privacy Policy', body: 'At Jopi, we strictly protect the confidentiality of your personal data and chats. User information is never sold or shared with any third party.' },
+        tr: { title: 'Gizlilik Politikası', body: 'Jopi olarak kişisel verilerinizin و sohbetlerinizin gizliliğini kesinlikle koruyoruz. Bilgileriniz asla üçüncü taraflarla paylaşılmaz.' },
+        es: { title: 'Política de privacidad', body: 'En Jopi protegemos estrictamente la confidencialidad de tus datos personales y chats.' },
+        id: { title: 'Kebijakan Privasi', body: 'Di Jopi, kami secara ketat melindungi kerahasiaan data pribadi dan obrolan Anda.' },
+        fr: { title: 'Politique de confidentialité', body: 'Chez Jopi, nous protégeons strictement la confidentialité de vos données personnelles.' },
+        de: { title: 'Datenschutzrichtlinie', body: 'Bei Jopi schützen wir die Vertraulichkeit Ihrer persönlichen Daten strengstens.' },
+        ru: { title: 'Политика конфиденциальности', body: 'В Jopi мы строго защищаем конфиденциальность ваших личных данных и чатов.' },
+        ur: { title: 'پرائیویسی پالیسی', body: 'Jopi میں ہم آپ کے ذاتی ڈیٹا اور چیٹس کی رازداری کا سختی سے تحفظ करते हैं।' },
       },
       rules: {
-        ar: { title: 'قواعد المنصة', body: '1. يُمنع منعاً باتاً انتحال شخصيات المشرفين أو الإدارة.\n2. يمنع الترويج لأي تطبيقات خارجية أو حسابات تجارية داخل غرف Nova.\n3. الالتزام بالذوق العام وعدم التعدي على خصوصية الآخرين.' },
-        en: { title: 'Platform Rules', body: '1. Impersonating admins or staff is strictly prohibited.\n2. Promoting external apps or commercial accounts inside Nova rooms is banned.\n3. Respect public decency and user privacy.' },
-        tr: { title: 'Platform Kuralları', body: '1. Yönetici taklidi yapmak kesinlikle yasaktır.\n2. Nova odalarında dış uygulama tanıtımı yasaktır.' },
+        ar: { title: 'قواعد المنصة', body: '1. يُمنع منعاً باتاً انتحال شخصيات المشرفين أو الإدارة.\n2. يمنع الترويج لأي تطبيقات خارجية أو حسابات تجارية داخل غرف Jopi.\n3. الالتزام بالذوق العام وعدم التعدي على خصوصية الآخرين.' },
+        en: { title: 'Platform Rules', body: '1. Impersonating admins or staff is strictly prohibited.\n2. Promoting external apps or commercial accounts inside Jopi rooms is banned.\n3. Respect public decency and user privacy.' },
+        tr: { title: 'Platform Kuralları', body: '1. Yönetici taklidi yapmak kesinlikle yasaktır.\n2. Jopi odalarında dış uygulama tanıtımı yasaktır.' },
         es: { title: 'Reglas de la plataforma', body: '1. Queda estrictamente prohibido suplantar a administradores.\n2. Se prohíbe la promoción de apps externas.' },
-        id: { title: 'Aturan Platform', body: '1. Meniru admin sangat dilarang.\n2. Promosi aplikasi luar dilarang di ruang Nova.' },
+        id: { title: 'Aturan Platform', body: '1. Meniru admin sangat dilarang.\n2. Promosi aplikasi luar dilarang di ruang Jopi.' },
         fr: { title: 'Règles de la plateforme', body: '1. L’usurpation d’identité des administrateurs est strictement interdite.' },
         de: { title: 'Plattformregeln', body: '1. Das Nachahmen von Administratoren ist strengstens untersagt.' },
         ru: { title: 'Правила платформы', body: '1. Строго запрещено выдавать себя за администраторов.' },
-        ur: { title: 'پلتफॉर्म کے اصول', body: '1. ایڈمنز کی نقل کرنا سختی سے منع ہے۔' },
+        ur: { title: 'پلتفرم کے اصول', body: '1. ایڈمنز کی نقل کرنا سختی سے منع ہے۔' },
       },
       childPolicy: {
-        ar: { title: 'سياسة حماية الطفل', body: 'تطبيق Nova مخصص حصرياً للبالغين (+18). نحن نطبق سياسة صارمة جداً (Zero Tolerance) ضد أي استغلال أو إساءة للأطفال، وسيتم حظر أي حساب مخالف نهائياً.' },
-        en: { title: 'Child Safeguarding Policy', body: 'Nova is strictly for adults (+18). We have a zero-tolerance policy against any exploitation or abuse of children, resulting in permanent bans.' },
-        tr: { title: 'Çocuk Koruma Politikası', body: 'Nova kesinlikle yetişkinler (+18) içindir. Çocukların istismarına karşı sıfır tolerans politikamız vardır.' },
-        es: { title: 'Política de protección infantil', body: 'Nova es estrictamente para adultos (+18). Política de tolerancia cero contra el abuso infantil.' },
-        id: { title: 'Kebijakan Perlindungan Anak', body: 'Nova khusus untuk dewasa (+18). Kami memiliki kebijakan nol toleransi terhadap eksploitasi anak.' },
-        fr: { title: 'Politique de protection de l’enfance', body: 'Nova est strictement réservé aux adultes (+18).' },
-        de: { title: 'Kinderschutzrichtlinie', body: 'Nova ist strengstens für Erwachsene (+18).' },
-        ru: { title: 'Политика защиты детей', body: 'Nova строго для взрослых (+18).' },
-        ur: { title: 'بچوں کے تحفظ کی پالیسی', body: 'Nova سختی سے بالغوں (+18) کے لیے ہے۔' },
+        ar: { title: 'سياسة حماية الطفل', body: 'تطبيق Jopi مخصص حصرياً للبالغين (+18). نحن نطبق سياسة صارمة جداً (Zero Tolerance) ضد أي استغلال أو إساءة للأطفال، وسيتم حظر أي حساب مخالف نهائياً.' },
+        en: { title: 'Child Safeguarding Policy', body: 'Jopi is strictly for adults (+18). We have a zero-tolerance policy against any exploitation or abuse of children, resulting in permanent bans.' },
+        tr: { title: 'Çocuk Koruma Politikası', body: 'Jopi kesinlikle yetişkinler (+18) içindir. Çocukların istismarına karşı sıfır tolerans politikamız vardır.' },
+        es: { title: 'Política de protección infantil', body: 'Jopi es estrictamente para adultos (+18). Política de tolerancia cero contra el abuso infantil.' },
+        id: { title: 'Kebijakan Perlindungan Anak', body: 'Jopi khusus untuk dewasa (+18). Kami memiliki kebijakan nol toleransi terhadap eksploitasi anak.' },
+        fr: { title: 'Politique de protection de l’enfance', body: 'Jopi est strictement réservé aux adultes (+18).' },
+        de: { title: 'Kinderschutzrichtlinie', body: 'Jopi ist strengstens für Erwachsene (+18).' },
+        ru: { title: 'Политика защиты детей', body: 'Jopi строго для взрослых (+18).' },
+        ur: { title: 'بچوں کے تحفظ کی پالیسی', body: 'Jopi سختی سے بالغوں (+18) کے لیے ہے۔' },
       },
       guidelines: {
-        ar: { title: 'إرشادات المجتمع', body: 'مجتمع Nova يهدف إلى بناء تواصل اجتماعي راقٍ، آمن، وممتع. تفاعل بإيجابية، وساهم في نشر بيئة نظيفة ومرحة داخل الغرف الصوتية وعبر اللحظات.' },
-        en: { title: 'Community Guidelines', body: 'Nova aims to build sophisticated, safe, and fun social communication. Interact positively and help maintain a clean environment in voice rooms.' },
-        tr: { title: 'Topluluk Kuralları', body: 'Nova, güvenli ve eğlenceli bir sosyal iletişim kurmayı amaçlar. Olumlu etkileşimde bulunun.' },
-        es: { title: 'Pautas de la comunidad', body: 'Nova busca construir una comunicación social sofisticada, segura y divertida.' },
-        id: { title: 'Panduan Komunitas', body: 'Nova bertujuan membangun komunikasi sosial yang aman dan menyenangkan.' },
-        fr: { title: 'Règlement de la communauté', body: 'Nova vise à bâtir une communication sociale sophistiquée et sûre.' },
-        de: { title: 'Community-Richtlinien', body: 'Nova zielt darauf ab, eine sichere und unterhaltsame soziale Kommunikation aufzubauen.' },
-        ru: { title: 'Правила сообщества', body: 'Nova стремится создать безопасное и увлекательное общение.' },
-        ur: { title: 'کمیونٹی گائیڈ لائنز', body: 'Nova کا مقصد ایک شاندار اور محفوظ کمیونٹی بنانا ہے۔' },
+        ar: { title: 'إرشادات المجتمع', body: 'مجتمع Jopi يهدف إلى بناء تواصل اجتماعي راقٍ، آمن، وممتع. تفاعل بإيجابية، وساهم في نشر بيئة نظيفة ومرحة داخل الغرف الصوتية وعبر اللحظات.' },
+        en: { title: 'Community Guidelines', body: 'Jopi aims to build sophisticated, safe, and fun social communication. Interact positively and help maintain a clean environment in voice rooms.' },
+        tr: { title: 'Topluluk Kuralları', body: 'Jopi, güvenli ve eğlenceli bir sosyal iletişim kurmayı amaçlar. Olumlu etkileşimde bulunun.' },
+        es: { title: 'Pautas de la comunidad', body: 'Jopi busca construir una comunicación social sofisticada, segura y divertida.' },
+        id: { title: 'Panduan Komunitas', body: 'Jopi bertujuan membangun komunikasi sosial yang aman dan menyenangkan.' },
+        fr: { title: 'Règlement de la communauté', body: 'Jopi vise à bâtir une communication sociale sophistiquée et sûre.' },
+        de: { title: 'Community-Richtlinien', body: 'Jopi zielt darauf ab, eine sichere und unterhaltsame soziale Kommunikation aufzubauen.' },
+        ru: { title: 'Правила сообщества', body: 'Jopi стремится создать безопасное и увлекательное общение.' },
+        ur: { title: 'کمیونٹی گائیڈ لائنز', body: 'Jopi کا مقصد ایک شاندار اور محفوظ کمیونٹی بنانا ہے۔' },
       },
     };
 
@@ -372,11 +353,9 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
-  // الشاشة الرئيسية للإعدادات العامة (Settings Main Screen)
   if (showSettingsScreen) {
     return (
       <div className="w-full max-w-md mx-auto min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 select-none flex flex-col justify-between">
-        
         <div className="bg-white dark:bg-slate-900 p-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
           <button onClick={() => setShowSettingsScreen(false)} className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white"><ArrowRight className="w-5 h-5" /></button>
           <h1 className="text-sm font-black text-slate-900 dark:text-white">{t('settings')}</h1>
@@ -389,7 +368,7 @@ export const ProfileScreen: React.FC = () => {
             <button onClick={() => setSettingsView('notifications')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><Bell className="w-4 h-4 text-amber-500" /> {t('notifications')}</span><ChevronRight className="w-4 h-4 text-slate-400" /></button>
             <button onClick={() => setSettingsView('language')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><Globe className="w-4 h-4 text-blue-500" /> {t('languageSetting')}</span><div className="flex items-center gap-1.5 text-slate-400"><span className="text-[11px]">{currentLanguageOption.name}</span><ChevronRight className="w-4 h-4" /></div></button>
             <button onClick={() => setSettingsView('chat')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500" /> {t('chatSettings')}</span><ChevronRight className="w-4 h-4 text-slate-400" /></button>
-            <button onClick={() => setSettingsView('privacy')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> {t('privacy')}</span><ChevronRight className="w-4 h-4 text-slate-400" /></button>
+            <button onClick={() => setSettingsView('privacy')} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold text-slate-800 dark:text-slate-200"><span className="flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-500" /> {t('privacy')}</span><ChevronRight className="w-4 h-4 text-slate-400" /></button>
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -415,13 +394,11 @@ export const ProfileScreen: React.FC = () => {
               <LogOut className="w-4 h-4" /> {t('logout')}
             </button>
           </div>
-
         </div>
       </div>
     );
   }
 
-  // شاشة عائلة المستخدم الخاصة فقط
   if (showFamilyModal) {
     return (
       <div className="w-full max-w-md mx-auto min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 select-none flex flex-col justify-between">
@@ -449,7 +426,6 @@ export const ProfileScreen: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto px-4 pt-3 pb-24 select-none">
       
-      {/* Top Header Controls */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-base font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
           {t('navProfile')}
@@ -465,7 +441,6 @@ export const ProfileScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Profile Card */}
       <div className="relative rounded-3xl p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl text-center mb-4">
         
         <div className="relative w-28 h-28 mx-auto mb-3">
@@ -515,20 +490,34 @@ export const ProfileScreen: React.FC = () => {
           )}
         </div>
 
+        {/* زر تعديل الملف الشخصي وزر التوثيق */}
         <div className="flex items-center justify-center gap-2 mt-4">
-          <button onClick={() => setEditProfileOpen(true)} className="flex-1 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-500/25 flex items-center justify-center gap-1.5 transition active:scale-95">
+          <button 
+            onClick={() => setEditProfileOpen(true)} 
+            className="flex-1 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-500/25 flex items-center justify-center gap-1.5 transition active:scale-95"
+          >
             <Edit3 className="w-4 h-4" />
-            <span>{t('editProfile')}</span>
+            <span>تعديل الملف الشخصي</span>
           </button>
 
-          <button onClick={toggleVerification} className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95 ${user.is_verified ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}>
-            <ShieldCheck className="w-4 h-4" />
-            <span>{user.is_verified ? 'Verified ✓' : 'Verify'}</span>
-          </button>
+          {user.is_verified ? (
+            <div className="py-2.5 px-3 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center justify-center gap-1">
+              <ShieldCheck className="w-4 h-4" />
+              <span>حساب موثق ✓</span>
+            </div>
+          ) : (
+            <button 
+              onClick={() => showToast('تم إرسال طلب توثيق الحساب للإدارة بنجاح 🛡️ سيتم مراجعته قريباً', 'success')} 
+              className="py-2.5 px-3 rounded-xl border bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95"
+              title="إرسال طلب توثيق الحساب"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>طلب توثيق</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Wallet Integrated Card */}
       <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm mb-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -538,7 +527,6 @@ export const ProfileScreen: React.FC = () => {
           <button onClick={() => setShowTopUpModal(true)} className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-sm transition">{t('buyCoins')}</button>
         </div>
 
-        {/* Diamonds & Cashout Section (Sugo Style) */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-cyan-500/5 p-3 rounded-2xl border border-cyan-500/20">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-cyan-500 text-white flex items-center justify-center font-black shadow-sm">
@@ -575,10 +563,10 @@ export const ProfileScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Nova Style: My Room, My Family & Visitors Cards */}
+      {/* زر My Room معدل التسمية */}
       <div className="grid grid-cols-3 gap-2.5 mb-4">
         <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-center shadow-sm">
-          <span className="block text-xs font-black text-slate-900 dark:text-white mb-0.5">{t('myRoom')}</span>
+          <span className="block text-xs font-black text-slate-900 dark:text-white mb-0.5">My Room</span>
           <span className="text-[10px] text-purple-600 font-bold flex items-center justify-center gap-1"><Users className="w-3 h-3" /> 0 online</span>
         </div>
 
@@ -609,26 +597,31 @@ export const ProfileScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Summary Bar */}
       <div className="grid grid-cols-3 gap-2.5 mb-4">
         <div onClick={() => setActiveTab('matches')} className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center shadow-sm cursor-pointer"><Heart className="w-4 h-4 text-rose-500 fill-rose-500 mx-auto mb-1" /><div className="text-base font-black text-slate-900 dark:text-white">{matchesCount}</div><span className="text-[10px] text-slate-400 font-semibold">{t('navMatches')}</span></div>
         <div onClick={() => setActiveTab('messages')} className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center shadow-sm cursor-pointer"><MessageCircle className="w-4 h-4 text-brand-500 fill-brand-500 mx-auto mb-1" /><div className="text-base font-black text-slate-900 dark:text-white">{chatsCount}</div><span className="text-[10px] text-slate-400 font-semibold">{t('navMessages')}</span></div>
         <div onClick={() => setShowTopUpModal(true)} className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center shadow-sm cursor-pointer"><Coins className="w-4 h-4 text-amber-500 fill-amber-500 mx-auto mb-1" /><div className="text-base font-black text-slate-900 dark:text-white">{coinBalance}</div><span className="text-[10px] text-slate-400 font-semibold">{t('navWallet')}</span></div>
       </div>
 
-      {/* About Me Section */}
+      {/* قسم نبذة عني مع زر تعديل مباشر */}
       <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm mb-4">
-        <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">{t('aboutMe')}</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">{t('aboutMe')}</h3>
+          <button 
+            onClick={() => setEditProfileOpen(true)}
+            className="text-[11px] font-bold text-brand-600 hover:underline flex items-center gap-1"
+          >
+            <Edit3 className="w-3.5 h-3.5" /> تعديل
+          </button>
+        </div>
         <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{user.bio || 'No bio added yet.'}</p>
       </div>
 
-      {/* Danger & Reset Actions */}
       <div className="flex flex-col gap-2">
         <button onClick={handleResetData} className="w-full py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-2"><RefreshCw className="w-4 h-4" /> <span>Reset Default Data</span></button>
         <button onClick={logout} className="w-full py-3 px-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center justify-center gap-2"><LogOut className="w-4 h-4" /> <span>{t('logout')}</span></button>
       </div>
 
-      {/* Visitors Modal */}
       <AnimatePresence>
         {showVisitorsModal && isVipUnlocked && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -656,7 +649,6 @@ export const ProfileScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Top-Up Modal */}
       <AnimatePresence>
         {showTopUpModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -684,7 +676,6 @@ export const ProfileScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Withdrawal & Cashout Modal */}
       <WithdrawalModal
         isOpen={showWithdrawModal}
         onClose={() => setShowWithdrawModal(false)}

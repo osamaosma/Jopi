@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Authentication Service (Production Fixed Version)
+// Jopi Authentication Service (Production Fixed Version)
 // ============================================================================
 
 import { User } from '../types';
@@ -36,7 +36,7 @@ export class AuthService {
   static async sendPhoneOtp(countryCode: string, phoneNumber: string): Promise<{ success: boolean; message: string }> {
     const fullPhone = `${countryCode}${phoneNumber.startsWith('0') ? phoneNumber.slice(1) : phoneNumber}`;
     
-    // استخدام خدمة Supabase الحقيقية لإرسال OTP للهاتف
+    // استخدام خدمة Supabase الحقيقية لإرسال OTP للهاتف عبر المزود المفعل (Vonage)
     const { error } = await supabase.auth.signInWithOtp({
       phone: fullPhone,
     });
@@ -142,13 +142,13 @@ export class AuthService {
     return { success: false, error: 'فشل إنشاء الحساب السحابي' };
   }
 
-  // --- Google & Social Sign-In (Real Supabase OAuth) ---
-static async socialLogin(provider: 'google' | 'apple'): Promise<{ success: boolean; user?: User; error?: string }> {
+  // --- Google & Social Sign-In (Real Supabase OAuth - Fixed for GitHub Pages) ---
+  static async socialLogin(provider: 'google' | 'apple'): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-          redirectTo: window.location.origin // استخدام رابط المتصفح الحالي لتجنب أخطاء الـ Scheme على الويب
+          redirectTo: `${window.location.origin}/Jopi/`
         }
       });
 
@@ -206,13 +206,13 @@ static async socialLogin(provider: 'google' | 'apple'): Promise<{ success: boole
       custom_id: generateCustomId(),
       email: authUser.email || additionalData?.email || '',
       phone_number: authUser.phone || additionalData?.phone_number || '',
-      display_name: authUser.user_metadata?.display_name || additionalData?.name || 'مستخدم MingleUp',
+      display_name: authUser.user_metadata?.display_name || additionalData?.name || 'مستخدم Jopi',
       date_of_birth: additionalData?.date_of_birth || '2000-01-01',
       age: age,
       gender: additionalData?.gender || 'other',
       country: additionalData?.country || 'المملكة العربية السعودية',
       city: additionalData?.city || 'الرياض',
-      bio: 'عضو جديد في عائلة MingleUp! ✨',
+      bio: 'عضو جديد في عائلة Jopi! ✨',
       profile_photo: authUser.user_metadata?.avatar_url || additionalData?.profile_photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80',
       photos: ['https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80'],
       interests: ['Coffee', 'Travel', 'Music'],

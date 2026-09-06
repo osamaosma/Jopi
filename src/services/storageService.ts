@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Local Storage & Persistence Service
+// Jopi Local Storage & Persistence Service
 // Manages local state and allows resetting or syncing with cloud backend
 // ============================================================================
 
@@ -13,20 +13,20 @@ import {
 } from '../data/mockData';
 
 const STORAGE_KEYS = {
-  CURRENT_USER: 'mingleup_current_user',
-  ALL_USERS: 'mingleup_all_users',
-  LIKES: 'mingleup_likes',
-  PASSES: 'mingleup_passes',
-  MATCHES: 'mingleup_matches',
-  CONVERSATIONS: 'mingleup_conversations',
-  MESSAGES: 'mingleup_messages',
-  GIFT_TRANSACTIONS: 'mingleup_gift_transactions',
-  COIN_TRANSACTIONS: 'mingleup_coin_transactions',
-  NOTIFICATIONS: 'mingleup_notifications',
-  REPORTS: 'mingleup_reports',
-  BLOCKED_USERS: 'mingleup_blocked_users',
-  USER_SETTINGS: 'mingleup_user_settings',
-  IS_AUTHENTICATED: 'mingleup_is_authenticated',
+  CURRENT_USER: 'jopi_current_user',
+  ALL_USERS: 'jopi_all_users',
+  LIKES: 'jopi_likes',
+  PASSES: 'jopi_passes',
+  MATCHES: 'jopi_matches',
+  CONVERSATIONS: 'jopi_conversations',
+  MESSAGES: 'jopi_messages',
+  GIFT_TRANSACTIONS: 'jopi_gift_transactions',
+  COIN_TRANSACTIONS: 'jopi_coin_transactions',
+  NOTIFICATIONS: 'jopi_notifications',
+  REPORTS: 'jopi_reports',
+  BLOCKED_USERS: 'jopi_blocked_users',
+  USER_SETTINGS: 'jopi_user_settings',
+  IS_AUTHENTICATED: 'jopi_is_authenticated',
 };
 
 // دالة حماية متوافقة مع TypeScript

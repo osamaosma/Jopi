@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp User Service (Production Supabase Version with Sugo Gallery & Moments)
+// Jopi User Service (Production Supabase Version with Sugo Gallery & Moments)
 // ============================================================================
 
 import { User, BlockedUser, Report, ReportReason, FilterPreferences, UserMoment } from '../types';
@@ -67,12 +67,85 @@ export class UserService {
     return updated;
   }
 
+  // --- تحديث كافة بيانات الملف الشخصي في السحابة ---
+  static async updateLogProfile(
+    newName: string, 
+    newBio: string, 
+    newCity: string, 
+    newCountry: string, 
+    newJobTitle: string, 
+    newPhotoUrl: string
+  ): Promise<boolean> {
+    const user = this.getCurrentUser();
+    if (!user || !user.id) return false;
+
+    const updatedData = {
+      display_name: newName,
+      bio: newBio,
+      city: newCity,
+      country: newCountry,
+      job_title: newJobTitle,
+      profile_photo: newPhotoUrl,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(updatedData)
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('Error updating profile in cloud:', error);
+      return false;
+    }
+
+    this.updateCurrentUser(updatedData);
+    return true;
+  }
+
+  // --- رفع صورة الملف الشخصي من ملفات الهاتف أو المعرض إلى سحابة Supabase Storage ---
+  static async uploadAndSetProfilePhoto(file: File): Promise<string | null> {
+    const user = this.getCurrentUser();
+    if (!user || !user.id) return null;
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('profiles')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error('Error uploading profile image:', uploadError.message);
+      return null;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('profiles')
+      .getPublicUrl(filePath);
+
+    const publicUrl = publicUrlData.publicUrl;
+
+    // تحديث رابط الصورة فقط مع الحفاظ على باقي البيانات الحالية
+    await this.updateLogProfile(
+      user.display_name, 
+      user.bio || '', 
+      user.city || '', 
+      user.country || '', 
+      user.job_title || '', 
+      publicUrl
+    );
+
+    return publicUrl;
+  }
+
   // --- Sugo-Style Gallery (Up to 9 Photos) & Moments Integration ---
   static async updateGalleryPhotos(photos: string[]): Promise<boolean> {
     const user = this.getCurrentUser();
     if (!user || !user.id) return false;
 
-    const limitedPhotos = photos.slice(0, 9); // تقييد الصور بحد أقصى 9 صور مطابق لسوجو
+    const limitedPhotos = photos.slice(0, 9);
 
     const { error } = await supabase
       .from('profiles')
@@ -124,7 +197,6 @@ export class UserService {
 
     return data as UserMoment;
   }
-  // ---------------------------------------------------------------
 
   static getDiscoverableUsers(filters?: FilterPreferences): User[] {
     StorageService.initializeDefaults();
@@ -214,7 +286,6 @@ export class UserService {
     return newReport;
   }
 
-  // --- Admin Moderation Helpers ---
   static getAllUsersForAdmin(): User[] {
     const allUsers = StorageService.get<User[]>(STORAGE_KEYS.ALL_USERS, []);
     const currentUser = this.getCurrentUser();

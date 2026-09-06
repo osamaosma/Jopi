@@ -22,6 +22,7 @@ import { ToastContainer } from './components/common/ToastContainer';
 import { SplashScreen } from './components/auth/SplashScreen';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { ProfileOnboarding } from './components/auth/ProfileOnboarding';
+import { PhoneAuth } from './components/auth/PhoneAuth';
 
 // Main Feature Screens
 import { DiscoverScreen } from './components/discover/DiscoverScreen';
@@ -50,13 +51,14 @@ const MainAppContent: React.FC = () => {
   const { isAuthenticated, isOnboarded, user } = useAuth();
   const { activeTab, activeConversation } = useApp();
   const [showSplash, setShowSplash] = useState(false);
+  const [authMode, setAuthMode] = useState<'selection' | 'phone'>('selection');
 
-  // التقاط توكن OAuth القادم من Google وإدارته تلقائياً عند الإقلاع
+  // Handle OAuth token capture from Google and automatic session management on boot
   useEffect(() => {
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         localStorage.setItem('mingleup_is_authenticated', 'true');
-        // إذا كان هناك هاش توكن في الرابط، نقوم بتنظيفه لتجنب التكرار
+        // If there is a token hash in the URL, clean it up to prevent duplication
         if (window.location.hash && window.location.hash.includes('access_token')) {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -72,14 +74,37 @@ const MainAppContent: React.FC = () => {
       console.log('[App] Real-time socket initialized for user:', u.display_name || u.name || u.id);
     }
   }, [isAuthenticated, user]);
-  
 
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
   if (!isAuthenticated) {
-    return <AuthScreen />;
+    return (
+      <div className="w-full min-h-screen min-h-[100dvh] bg-white dark:bg-slate-950 flex flex-col justify-center items-center p-4">
+        {authMode === 'selection' ? (
+          <div className="w-full max-w-md flex flex-col gap-4">
+            <AuthScreen />
+            <button
+              onClick={() => setAuthMode('phone')}
+              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors shadow-sm"
+            >
+              Sign in with Phone Number
+            </button>
+          </div>
+        ) : (
+          <div className="w-full max-w-md flex flex-col gap-4">
+            <PhoneAuth />
+            <button
+              onClick={() => setAuthMode('selection')}
+              className="w-full py-2 px-4 text-slate-600 dark:text-slate-400 hover:underline text-sm"
+            >
+              Back to standard sign-in options
+            </button>
+          </div>
+        )}
+      </div>
+    );
   }
 
   if (!isOnboarded) {
