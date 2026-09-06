@@ -45,8 +45,8 @@ export const AuthScreen: React.FC = () => {
     password: '',
     date_of_birth: '2000-01-01',
     gender: 'female',
-    country: 'المملكة العربية السعودية',
-    city: 'الرياض',
+    country: lang === 'ar' ? 'المملكة العربية السعودية' : 'Saudi Arabia',
+    city: lang === 'ar' ? 'الرياض' : 'Riyadh',
   });
 
   const handleSendOtp = async (e: React.FormEvent) => {

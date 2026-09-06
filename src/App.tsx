@@ -1,6 +1,5 @@
 // ============================================================================
-// Nova Main Application Root Component
-// Fully Responsive Mobile-First & Cloud Connected
+// Nova Main Application Root Component (Direct Integration & Friends Tab Native)
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -32,6 +31,7 @@ import { ChatScreen } from './components/chat/ChatScreen';
 import { MomentsScreen } from './components/moments/MomentsScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { FriendsTab } from './components/chat/FriendsTab'; // شاشة الأصدقاء المستقلة
 
 // Party Rooms Components
 import { LiveRoomModal, FloatingRoomPlayer } from './components/party/LiveRoomModal';
@@ -49,16 +49,14 @@ import { ReportModal } from './components/settings/BlockedUsersModal';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isOnboarded, user } = useAuth();
-  const { activeTab, activeConversation } = useApp();
+  const { activeTab, activeConversation, setActiveConversation, setActiveTab } = useApp();
   const [showSplash, setShowSplash] = useState(false);
   const [authMode, setAuthMode] = useState<'selection' | 'phone'>('selection');
 
-  // Handle OAuth token capture from Google and automatic session management on boot
   useEffect(() => {
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         localStorage.setItem('mingleup_is_authenticated', 'true');
-        // If there is a token hash in the URL, clean it up to prevent duplication
         if (window.location.hash && window.location.hash.includes('access_token')) {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -66,12 +64,9 @@ const MainAppContent: React.FC = () => {
     });
   }, []);
 
-  // Initialize Real-time WebSocket connection when user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       socketService.init(user);
-      const u = user as any;
-      console.log('[App] Real-time socket initialized for user:', u.display_name || u.name || u.id);
     }
   }, [isAuthenticated, user]);
 
@@ -87,7 +82,7 @@ const MainAppContent: React.FC = () => {
             <AuthScreen />
             <button
               onClick={() => setAuthMode('phone')}
-              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors shadow-sm"
+              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors shadow-sm cursor-pointer"
             >
               Sign in with Phone Number
             </button>
@@ -97,7 +92,7 @@ const MainAppContent: React.FC = () => {
             <PhoneAuth />
             <button
               onClick={() => setAuthMode('selection')}
-              className="w-full py-2 px-4 text-slate-600 dark:text-slate-400 hover:underline text-sm"
+              className="w-full py-2 px-4 text-slate-600 dark:text-slate-400 hover:underline text-sm cursor-pointer"
             >
               Back to standard sign-in options
             </button>
@@ -117,13 +112,33 @@ const MainAppContent: React.FC = () => {
       {/* App Header */}
       <Header />
 
-      {/* Main Content Area - Expands to Fill Entire Screen */}
+      {/* Main Content Area */}
       <main className="w-full flex-1 flex flex-col pb-20 overflow-y-auto">
         {activeTab === 'discover' && <DiscoverScreen />}
         {activeTab === 'party' && <PartyScreen />}
+        
+        {/* إذا كان التبويب messages وactiveConversation موجود تفتح شاشة الدردشة، وإلا تعرض شاشة المطابقات */}
         {activeTab === 'messages' && (
           activeConversation ? <ChatScreen /> : <MatchesScreen />
         )}
+
+        {/* الدمج المباشر لشاشة الأصدقاء كشاشة رئيسية مستقلة */}
+        {activeTab === 'friends' && (
+          <FriendsTab 
+            currentUserId={user?.id || ''} 
+            onStartChat={(friend) => {
+              setActiveConversation({
+                id: `conv_${friend.id}`,
+                partner: friend,
+                unread_count: 0,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+              setActiveTab('messages'); // الانتقال التلقائي للرسائل عند بدء المحادثة
+            }} 
+          />
+        )}
+
         {activeTab === 'wallet' && <MomentsScreen />}
         {activeTab === 'profile' && <ProfileScreen />}
         {activeTab === 'admin' && <AdminDashboard />}
@@ -132,12 +147,10 @@ const MainAppContent: React.FC = () => {
       {/* Bottom Navigation Fixed */}
       <BottomNav />
 
-      {/* Live Party Rooms Modals & Floating PiP Player */}
+      {/* Modals & Overlays */}
       <LiveRoomModal />
       <CreateRoomModal />
       <FloatingRoomPlayer />
-
-      {/* Other Modals & Overlays */}
       <MatchCelebrationModal />
       <FilterModal />
       <GiftStoreModal />

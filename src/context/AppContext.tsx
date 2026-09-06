@@ -14,7 +14,7 @@ import { NotificationService } from '../services/notificationService';
 import { socketService } from '../services/socketService';
 import { ChatService } from '../services/chatService';
 
-export type NavTab = 'discover' | 'party' | 'messages' | 'matches' | 'wallet' | 'moments' | 'profile' | 'admin';
+export type NavTab = 'discover' | 'party' | 'messages' | 'friends' | 'matches' | 'wallet' | 'moments' | 'profile' | 'admin';
 
 export interface ToastMessage {
   id: string;
@@ -221,13 +221,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (callSession) setCallSession(CallService.switchCamera(callSession));
   };
 
-  // حماية التأكد من تسجيل الدخول الحقيقي قبل تشغيل الخدمات السحابية والترحيب التلقائي
   useEffect(() => {
     const currentUser = StorageService.get<User | null>(STORAGE_KEYS.CURRENT_USER, null);
     const isAuthenticated = StorageService.get<boolean>(STORAGE_KEYS.IS_AUTHENTICATED, false);
 
     if (!currentUser || !isAuthenticated || !currentUser.id || currentUser.id.startsWith('user-')) {
-      return; // إيقاف الخدمات المؤقتة إذا لم يتم تسجيل الدخول بـ Supabase
+      return; 
     }
 
     const stopAutoGreetings = ChatService.startAutoGreetingScheduler((msg: Message) => {

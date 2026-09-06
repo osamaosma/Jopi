@@ -1,17 +1,16 @@
 // ============================================================================
-// MingleUp Private Chat Screen
-// Real-time chat with text, voice notes, gifts, emojis, typing indicator & call triggers
+// MingleUp Private Chat Screen & Friends Hub
 // ============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FriendsTab } from './FriendsTab';
 import { 
   ArrowLeft, ArrowRight, Phone, Video, MoreVertical, 
   Send, Mic, Gift as GiftIcon, Image as ImageIcon, 
-  Smile, CheckCheck, Play, Pause, ShieldAlert, Ban,
-  Volume2, Sparkles, X
+  Smile, CheckCheck, Play, Pause, ShieldAlert, Ban
 } from 'lucide-react';
-import { Message, Conversation, Gift } from '../../types';
+import { Message, Conversation, User } from '../../types';
 import { ChatService } from '../../services/chatService';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
@@ -31,7 +30,10 @@ export const ChatScreen: React.FC = () => {
     showToast 
   } = useApp();
   const { user: currentUser } = useAuth();
-  const { t, isRTL } = useLang();
+  const { t, isRTL, lang } = useLang();
+
+  // الحالة للتبديل بين المحادثات والأصدقاء عند عدم وجود محادثة نشطة
+  const [activeTab, setActiveTab] = useState<'chats' | 'friends'>('chats');
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -39,27 +41,20 @@ export const ChatScreen: React.FC = () => {
   const [showEmojiBar, setShowEmojiBar] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  // Voice Recording Simulator
   const [isRecording, setIsRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
-
-  // Audio Playback simulation
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const partner = activeConversation?.partner;
 
-  // Load messages, mark read & subscribe to Supabase Realtime
   useEffect(() => {
     if (!activeConversation) return;
 
-    // Load initial messages
     const msgs = ChatService.getMessages(activeConversation.id);
     setMessages(msgs);
     ChatService.markAsRead(activeConversation.id);
 
-    // Setup Supabase Realtime listener for new incoming messages
     const subscription = ChatService.subscribeToMessages(activeConversation.id, (newMsg) => {
       setMessages(prev => {
         if (prev.some(m => m.id === newMsg.id)) return prev;
@@ -72,12 +67,10 @@ export const ChatScreen: React.FC = () => {
     };
   }, [activeConversation?.id]);
 
-  // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Voice recording timer
   useEffect(() => {
     let interval: any;
     if (isRecording) {
@@ -90,9 +83,8 @@ export const ChatScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  if (!activeConversation || !partner) return null;
-
   const handleSendMessage = async (customText?: string, type: 'text' | 'voice' | 'image' = 'text', mediaUrl?: string, duration?: number) => {
+    if (!activeConversation || !partner) return;
     const textToSend = customText || inputText.trim();
     if (!textToSend && type === 'text') return;
 
@@ -112,7 +104,6 @@ export const ChatScreen: React.FC = () => {
     setInputText('');
     setShowEmojiBar(false);
 
-    // Trigger simulated bot reply
     setIsTyping(true);
     ChatService.triggerSimulatedReply(
       activeConversation.id,
@@ -155,21 +146,68 @@ export const ChatScreen: React.FC = () => {
     }
   };
 
+  // شاشة عرض المحادثات أو تبويب الأصدقاء إذا لم تكن هناك محادثة نشطة
+  if (!activeConversation) {
+    return (
+      <div className="fixed inset-0 z-40 bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-white select-none transition-colors">
+        <div className="p-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 shadow-sm z-20">
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+            <button 
+              onClick={() => setActiveTab('chats')}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${activeTab === 'chats' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              {lang === 'ar' ? 'المحادثات' : 'Chats'}
+            </button>
+            <button 
+              onClick={() => setActiveTab('friends')}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${activeTab === 'friends' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              {lang === 'ar' ? 'الأصدقاء' : 'Friends'}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === 'chats' ? (
+            <div className="p-6 text-center text-slate-400 text-xs">
+              {lang === 'ar' ? 'اختر محادثة لبدء الدردشة' : 'Select a conversation to start chatting'}
+            </div>
+          ) : (
+            currentUser && (
+              <FriendsTab 
+                currentUserId={currentUser.id} 
+                onStartChat={(friend: User) => {
+                  setActiveConversation({
+                    id: `conv_${friend.id}`,
+                    partner: friend,
+                    unread_count: 0,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  });
+                }} 
+              />
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!partner) return null;
+
   return (
     <div className="fixed inset-0 z-40 bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-white select-none transition-colors">
       
       {/* CHAT HEADER */}
       <div className="h-16 px-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm z-20">
         <div className="flex items-center gap-3">
-          {/* Back button */}
           <button
             onClick={() => setActiveConversation(null)}
-            className="p-2 -ms-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="p-2 -ms-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             {isRTL ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
           </button>
 
-          {/* Partner Info */}
           <div 
             onClick={() => setViewingUser(partner)}
             className="flex items-center gap-2.5 cursor-pointer"
@@ -192,31 +230,27 @@ export const ChatScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Header Action Controls */}
         <div className="flex items-center gap-1">
-          {/* Voice Call */}
           <button
             onClick={() => startCall(partner, 'voice')}
-            className="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-600 transition active:scale-95"
+            className="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-600 transition active:scale-95 cursor-pointer"
             title={t('callVoice')}
           >
             <Phone className="w-4 h-4" />
           </button>
 
-          {/* Video Call */}
           <button
             onClick={() => startCall(partner, 'video')}
-            className="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-600 transition active:scale-95"
+            className="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-600 transition active:scale-95 cursor-pointer"
             title={t('callVideo')}
           >
             <Video className="w-4 h-4" />
           </button>
 
-          {/* More Options Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowMenu(prev => !prev)}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <MoreVertical className="w-4 h-4" />
             </button>
@@ -228,7 +262,7 @@ export const ChatScreen: React.FC = () => {
                     setShowMenu(false);
                     setGiftModal({ isOpen: true, targetUser: partner, conversationId: activeConversation.id });
                   }}
-                  className="w-full px-4 py-2.5 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 text-purple-600 dark:text-purple-400"
+                  className="w-full px-4 py-2.5 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 text-purple-600 dark:text-purple-400 cursor-pointer"
                 >
                   <GiftIcon className="w-4 h-4" />
                   <span>{t('sendGift')}</span>
@@ -238,7 +272,7 @@ export const ChatScreen: React.FC = () => {
                     setShowMenu(false);
                     setReportModal({ isOpen: true, targetUser: partner });
                   }}
-                  className="w-full px-4 py-2.5 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 text-amber-600 dark:text-amber-400"
+                  className="w-full px-4 py-2.5 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 text-amber-600 dark:text-amber-400 cursor-pointer"
                 >
                   <ShieldAlert className="w-4 h-4" />
                   <span>{t('reportUser')}</span>
@@ -248,7 +282,7 @@ export const ChatScreen: React.FC = () => {
                     setShowMenu(false);
                     setViewingUser(partner);
                   }}
-                  className="w-full px-4 py-2.5 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 text-rose-600 dark:text-rose-400"
+                  className="w-full px-4 py-2.5 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 text-rose-600 dark:text-rose-400 cursor-pointer"
                 >
                   <Ban className="w-4 h-4" />
                   <span>{t('blockUser')}</span>
@@ -270,7 +304,6 @@ export const ChatScreen: React.FC = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
             >
-              {/* Message Bubble */}
               <div
                 className={`max-w-[78%] rounded-2xl p-3 shadow-sm ${
                   isMe
@@ -278,7 +311,6 @@ export const ChatScreen: React.FC = () => {
                     : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700/60 rounded-bl-none'
                 }`}
               >
-                {/* 1. GIFT MESSAGE */}
                 {msg.message_type === 'gift' && (
                   <div className="flex items-center gap-3 p-2 rounded-xl bg-black/15">
                     <span className="text-3xl animate-bounce">
@@ -295,19 +327,17 @@ export const ChatScreen: React.FC = () => {
                   </div>
                 )}
 
-                {/* 2. IMAGE MESSAGE */}
                 {msg.message_type === 'image' && msg.media_url && (
                   <div className="rounded-xl overflow-hidden mb-1.5 max-h-56">
                     <img src={msg.media_url} alt="Media" className="w-full h-full object-cover" />
                   </div>
                 )}
 
-                {/* 3. VOICE NOTE MESSAGE */}
                 {msg.message_type === 'voice' && (
                   <div className="flex items-center gap-3 min-w-[180px] py-1">
                     <button
                       onClick={() => toggleAudioPlay(msg.id)}
-                      className={`w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95 shadow-md ${
+                      className={`w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95 shadow-md cursor-pointer ${
                         isMe ? 'bg-white text-brand-600' : 'bg-brand-600 text-white'
                       }`}
                     >
@@ -318,7 +348,6 @@ export const ChatScreen: React.FC = () => {
                       )}
                     </button>
 
-                    {/* Animated waveform bars */}
                     <div className="flex-1 flex items-center gap-0.5 h-6">
                       {[3, 6, 9, 5, 8, 4, 7, 3, 6, 8, 4, 7, 5].map((height, i) => (
                         <span
@@ -337,14 +366,12 @@ export const ChatScreen: React.FC = () => {
                   </div>
                 )}
 
-                {/* 4. TEXT CONTENT */}
                 {msg.text && msg.message_type !== 'voice' && (
                   <p className="text-xs leading-relaxed font-normal">
                     {msg.text}
                   </p>
                 )}
 
-                {/* Time & Read Status */}
                 <div className={`flex items-center gap-1 justify-end mt-1 text-[9px] ${isMe ? 'text-white/70' : 'text-slate-400'}`}>
                   <span>
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -358,7 +385,6 @@ export const ChatScreen: React.FC = () => {
           );
         })}
 
-        {/* TYPING INDICATOR */}
         {isTyping && (
           <motion.div
             initial={{ opacity: 0, y: 5 }}
@@ -392,7 +418,7 @@ export const ChatScreen: React.FC = () => {
               <button
                 key={i}
                 onClick={() => setInputText(prev => prev + emoji)}
-                className="text-xl p-1.5 hover:scale-125 transition active:scale-95"
+                className="text-xl p-1.5 hover:scale-125 transition active:scale-95 cursor-pointer"
               >
                 {emoji}
               </button>
@@ -412,13 +438,13 @@ export const ChatScreen: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsRecording(false)}
-              className="p-1.5 rounded-lg bg-black/20 text-xs font-bold"
+              className="p-1.5 rounded-lg bg-black/20 text-xs font-bold cursor-pointer"
             >
               إلغاء
             </button>
             <button
               onClick={handleSendVoiceNote}
-              className="px-3 py-1.5 rounded-lg bg-white text-rose-600 text-xs font-bold shadow"
+              className="px-3 py-1.5 rounded-lg bg-white text-rose-600 text-xs font-bold shadow cursor-pointer"
             >
               إرسال
             </button>
@@ -428,35 +454,30 @@ export const ChatScreen: React.FC = () => {
 
       {/* INPUT BAR */}
       <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-1.5 z-20">
-        
-        {/* Gift Trigger */}
         <button
           onClick={() => setGiftModal({ isOpen: true, targetUser: partner, conversationId: activeConversation.id })}
-          className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 hover:scale-105 transition active:scale-95 shadow-sm"
+          className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 hover:scale-105 transition active:scale-95 shadow-sm cursor-pointer"
           title={t('sendGift')}
         >
           <GiftIcon className="w-5 h-5" />
         </button>
 
-        {/* Photo Attachment */}
         <button
           onClick={handleSendMockPhoto}
-          className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95"
+          className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
           title="Attach Image"
         >
           <ImageIcon className="w-5 h-5" />
         </button>
 
-        {/* Emoji Trigger */}
         <button
           onClick={() => setShowEmojiBar(prev => !prev)}
-          className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95"
+          className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
           title="Emojis"
         >
           <Smile className="w-5 h-5" />
         </button>
 
-        {/* Text Input Field */}
         <input
           type="text"
           value={inputText}
@@ -466,18 +487,17 @@ export const ChatScreen: React.FC = () => {
           className="flex-1 py-2.5 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-inner"
         />
 
-        {/* Voice Note Record / Text Send Button */}
         {inputText.trim() ? (
           <button
             onClick={() => handleSendMessage()}
-            className="p-2.5 rounded-2xl bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-md shadow-brand-500/30 hover:scale-105 active:scale-95 transition"
+            className="p-2.5 rounded-2xl bg-gradient-to-r from-brand-600 to-rose-600 text-white shadow-md shadow-brand-500/30 hover:scale-105 active:scale-95 transition cursor-pointer"
           >
             <Send className="w-5 h-5" />
           </button>
         ) : (
           <button
             onClick={() => setIsRecording(true)}
-            className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 transition active:scale-95"
+            className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 transition active:scale-95 cursor-pointer"
             title="Record Voice Note"
           >
             <Mic className="w-5 h-5" />
