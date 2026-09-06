@@ -491,28 +491,27 @@ export const ProfileScreen: React.FC = () => {
         </div>
 
         {/* زر تعديل الملف الشخصي وزر التوثيق */}
-        <div className="flex items-center justify-center gap-2 mt-4">
+<div className="flex items-center justify-center gap-2 mt-4">
           <button 
             onClick={() => setEditProfileOpen(true)} 
-            className="flex-1 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-500/25 flex items-center justify-center gap-1.5 transition active:scale-95"
+            className="flex-1 py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-black shadow-lg shadow-brand-500/30 flex items-center justify-center gap-2 transition active:scale-95"
           >
-            <Edit3 className="w-4 h-4" />
-            <span>تعديل الملف الشخصي</span>
+            <Edit3 className="w-4 h-4 text-white" />
+            <span className="text-white font-bold">تعديل الملف الشخصي</span>
           </button>
 
           {user.is_verified ? (
-            <div className="py-2.5 px-3 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center justify-center gap-1">
+            <div className="py-3 px-3 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center justify-center gap-1">
               <ShieldCheck className="w-4 h-4" />
-              <span>حساب موثق ✓</span>
+              <span>موثق ✓</span>
             </div>
           ) : (
             <button 
-              onClick={() => showToast('تم إرسال طلب توثيق الحساب للإدارة بنجاح 🛡️ سيتم مراجعته قريباً', 'success')} 
-              className="py-2.5 px-3 rounded-xl border bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95"
-              title="إرسال طلب توثيق الحساب"
+              onClick={() => showToast('تم إرسال طلب توثيق الحساب للإدارة بنجاح 🛡️', 'success')} 
+              className="py-3 px-3 rounded-xl border bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95"
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>طلب توثيق</span>
+              <span>توثيق</span>
             </button>
           )}
         </div>
