@@ -1,5 +1,5 @@
 // ============================================================================
-// Jopi Authentication Screen (Real Supabase Production Ready)
+// Jopi Authentication Screen (Real Supabase Production Ready with Multi-Language)
 // ============================================================================
 
 import React, { useState } from 'react';
@@ -13,11 +13,10 @@ import { useLang } from '../../context/LangContext';
 import { useApp } from '../../context/AppContext';
 import { SignUpData } from '../../services/authService';
 import { COUNTRIES_LIST, Country } from '../../data/countriesData';
-import { supabase } from '../../services/supabaseClient';
 
 export const AuthScreen: React.FC = () => {
   const { login, signUp, sendPhoneOtp, verifyPhoneOtp, socialLogin } = useAuth();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { showToast } = useApp();
 
   const [authMethod, setAuthMethod] = useState<'phone' | 'email' | 'signup'>('phone');
@@ -53,7 +52,7 @@ export const AuthScreen: React.FC = () => {
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber.trim()) {
-      setErrorMessage('يرجى إدخال رقم الهاتف بشكل صحيح');
+      setErrorMessage(lang === 'ar' ? 'يرجى إدخال رقم الهاتف بشكل صحيح' : 'Please enter a valid phone number');
       return;
     }
     setLoading(true);
@@ -62,13 +61,13 @@ export const AuthScreen: React.FC = () => {
       const res = await sendPhoneOtp(selectedCountry.dialCode, phoneNumber);
       if (res.success) {
         setOtpSent(true);
-        setOtpCode(''); // إزالة الرمز الوهمي ليكون الاعتماد على الرمز الحقيقي المرسل فقط
+        setOtpCode('');
         showToast(res.message, 'success');
       } else {
-        setErrorMessage(res.message || 'فشل إرسال رمز التحقق عبر السيرفر');
+        setErrorMessage(res.message || (lang === 'ar' ? 'فشل إرسال رمز التحقق عبر السيرفر' : 'Failed to send OTP'));
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'حدث خطأ أثناء إرسال الرمز');
+      setErrorMessage(err.message || (lang === 'ar' ? 'حدث خطأ أثناء إرسال الرمز' : 'An error occurred while sending code'));
     } finally {
       setLoading(false);
     }
@@ -77,7 +76,7 @@ export const AuthScreen: React.FC = () => {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otpCode.trim() || otpCode.length < 4) {
-      setErrorMessage('يرجى إدخال رمز التحقق المؤلف من أرقام صحيحة');
+      setErrorMessage(lang === 'ar' ? 'يرجى إدخال رمز التحقق المؤلف من أرقام صحيحة' : 'Please enter a valid OTP code');
       return;
     }
     setLoading(true);
@@ -85,13 +84,13 @@ export const AuthScreen: React.FC = () => {
     try {
       const res = await verifyPhoneOtp(selectedCountry.dialCode, phoneNumber, otpCode);
       if (res.success) {
-        showToast('تم التحقق بنجاح! مرحباً بك 🚀', 'success');
+        showToast(lang === 'ar' ? 'تم التحقق بنجاح! مرحباً بك 🚀' : 'Verified successfully! Welcome 🚀', 'success');
         window.location.reload();
       } else {
-        setErrorMessage(res.error || 'رمز التحقق غير صحيح أو منتهي الصلاحية');
+        setErrorMessage(res.error || (lang === 'ar' ? 'رمز التحقق غير صحيح أو منتهي الصلاحية' : 'Invalid or expired OTP code'));
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'فشل التحقق من الرمز');
+      setErrorMessage(err.message || (lang === 'ar' ? 'فشل التحقق من الرمز' : 'Verification failed'));
     } finally {
       setLoading(false);
     }
@@ -100,7 +99,7 @@ export const AuthScreen: React.FC = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMessage('يرجى إدخال البريد الإلكتروني وكلمة المرور');
+      setErrorMessage(lang === 'ar' ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور' : 'Please enter email and password');
       return;
     }
     setLoading(true);
@@ -108,13 +107,13 @@ export const AuthScreen: React.FC = () => {
     try {
       const res = await login(email, password);
       if (res.success) {
-        showToast('تم تسجيل الدخول بنجاح!', 'success');
+        showToast(lang === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Logged in successfully!', 'success');
         window.location.reload();
       } else {
-        setErrorMessage(res.error || 'فشل تسجيل الدخول، تأكد من البيانات');
+        setErrorMessage(res.error || (lang === 'ar' ? 'فشل تسجيل الدخول، تأكد من البيانات' : 'Login failed, check credentials'));
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'حدث خطأ غير متوقع');
+      setErrorMessage(err.message || (lang === 'ar' ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred'));
     } finally {
       setLoading(false);
     }
@@ -123,7 +122,7 @@ export const AuthScreen: React.FC = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!signUpData.name || !signUpData.email || !signUpData.password) {
-      setErrorMessage('يرجى ملء جميع الحقول المطلوبة بدقة');
+      setErrorMessage(lang === 'ar' ? 'يرجى ملء جميع الحقول المطلوبة بدقة' : 'Please fill in all required fields');
       return;
     }
     setLoading(true);
@@ -131,28 +130,28 @@ export const AuthScreen: React.FC = () => {
     try {
       const res = await signUp(signUpData);
       if (res.success) {
-        showToast('تم إنشاء الحساب بنجاح!', 'success');
+        showToast(lang === 'ar' ? 'تم إنشاء الحساب بنجاح!' : 'Account created successfully!', 'success');
         window.location.reload();
       } else {
-        setErrorMessage(res.error || 'فشل إنشاء الحساب السحابي');
+        setErrorMessage(res.error || (lang === 'ar' ? 'فشل إنشاء الحساب السحابي' : 'Cloud signup failed'));
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'حدث خطأ أثناء التسجيل');
+      setErrorMessage(err.message || (lang === 'ar' ? 'حدث خطأ أثناء التسجيل' : 'Registration error'));
     } finally {
       setLoading(false);
     }
   };
 
-const handleSocialLogin = async (provider: 'google' | 'apple') => {
+  const handleSocialLogin = async (provider: 'google' | 'apple') => {
     setLoading(true);
     setErrorMessage('');
     try {
       const res = await socialLogin(provider);
       if (!res.success) {
-        setErrorMessage('فشل تسجيل الدخول عبر المنصة الخارجية');
+        setErrorMessage(lang === 'ar' ? 'فشل تسجيل الدخول عبر المنصة الخارجية' : 'External login failed');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'فشل الاتصال بخدمة المصادقة الخارجية');
+      setErrorMessage(err.message || (lang === 'ar' ? 'فشل الاتصال بخدمة المصادقة الخارجية' : 'Connection error with external provider'));
     } finally {
       setLoading(false);
     }
@@ -167,7 +166,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
             Jopi
           </h2>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            {t('tagline') || 'تطبيق الدردشة والترفيه الاجتماعي الألطف'}
+            {t('tagline') || (lang === 'ar' ? 'تطبيق الدردشة والترفيه الاجتماعي الألطف' : 'The sweetest social chat & entertainment app')}
           </p>
         </div>
 
@@ -180,7 +179,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
             }`}
           >
             <Phone className="w-3.5 h-3.5" />
-            <span>{t('phoneAuthTab') || 'الهاتف'}</span>
+            <span>{t('phoneAuthTab') || (lang === 'ar' ? 'الهاتف' : 'Phone')}</span>
           </button>
 
           <button
@@ -191,7 +190,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
             }`}
           >
             <Mail className="w-3.5 h-3.5" />
-            <span>{t('emailAuthTab') || 'البريد'}</span>
+            <span>{t('emailAuthTab') || (lang === 'ar' ? 'البريد' : 'Email')}</span>
           </button>
 
           <button
@@ -202,7 +201,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
             }`}
           >
             <UserIcon className="w-3.5 h-3.5" />
-            <span>{t('signupBtn') || 'حساب جديد'}</span>
+            <span>{t('signupBtn') || (lang === 'ar' ? 'حساب جديد' : 'Sign Up')}</span>
           </button>
         </div>
 
@@ -220,7 +219,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
                 <form onSubmit={handleSendOtp} className="space-y-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      أدخل رقم الهاتف
+                      {lang === 'ar' ? 'أدخل رقم الهاتف' : 'Enter phone number'}
                     </label>
                     <div className="flex gap-2">
                       <button
@@ -249,7 +248,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
                   </div>
 
                   <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md cursor-pointer">
-                    {loading ? 'جاري الإرسال عبر السيرفر...' : 'إرسال رمز التحقق SMS الحقيقي'}
+                    {loading ? (lang === 'ar' ? 'جاري الإرسال عبر السيرفر...' : 'Sending via server...') : (lang === 'ar' ? 'إرسال رمز التحقق SMS الحقيقي' : 'Send Real SMS OTP')}
                   </button>
                 </form>
               ) : (
@@ -258,7 +257,9 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
                     <div className="w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-950 text-brand-600 mx-auto mb-2 flex items-center justify-center">
                       <KeyRound className="w-6 h-6" />
                     </div>
-                    <h3 className="text-sm font-black">أدخل رمز التحقق المرسل لهاتفك</h3>
+                    <h3 className="text-sm font-black">
+                      {lang === 'ar' ? 'أدخل رمز التحقق المرسل لهاتفك' : 'Enter the verification code sent to your phone'}
+                    </h3>
                   </div>
 
                   <div>
@@ -276,10 +277,10 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
 
                   <div className="flex gap-2">
                     <button type="button" onClick={() => setOtpSent(false)} className="px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold cursor-pointer">
-                      تغيير الرقم
+                      {lang === 'ar' ? 'تغيير الرقم' : 'Change Number'}
                     </button>
                     <button type="submit" disabled={loading} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-rose-600 text-white font-bold text-xs cursor-pointer">
-                      {loading ? 'جاري التحقق...' : 'تحقق واعتماد الحساب'}
+                      {loading ? (lang === 'ar' ? 'جاري التحقق...' : 'Verifying...') : (lang === 'ar' ? 'تحقق واعتماد الحساب' : 'Verify & Continue')}
                     </button>
                   </div>
                 </form>
@@ -290,7 +291,9 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
           {authMethod === 'email' && (
             <motion.form key="email-auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleEmailLogin} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">البريد الإلكتروني</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {lang === 'ar' ? 'البريد الإلكتروني' : 'Email Address'}
+                </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 absolute start-3.5 top-3.5 text-slate-400" />
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" className="w-full ps-10 pe-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
@@ -298,7 +301,9 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">كلمة المرور</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {lang === 'ar' ? 'كلمة المرور' : 'Password'}
+                </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute start-3.5 top-3.5 text-slate-400" />
                   <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" className="w-full ps-10 pe-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
@@ -306,7 +311,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
               </div>
 
               <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md cursor-pointer">
-                {loading ? 'جاري الدخول...' : 'تسجيل الدخول'}
+                {loading ? (lang === 'ar' ? 'جاري الدخول...' : 'Logging in...') : (lang === 'ar' ? 'تسجيل الدخول' : 'Sign In')}
               </button>
             </motion.form>
           )}
@@ -314,22 +319,28 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
           {authMethod === 'signup' && (
             <motion.form key="signup-auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleSignUp} className="space-y-2.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الاسم الكامل</label>
-                <input type="text" value={signUpData.name} onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })} required placeholder="الاسم الكامل" className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {lang === 'ar' ? 'الاسم الكامل' : 'Full Name'}
+                </label>
+                <input type="text" value={signUpData.name} onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })} required placeholder={lang === 'ar' ? 'الاسم الكامل' : 'Full Name'} className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">البريد الإلكتروني</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {lang === 'ar' ? 'البريد الإلكتروني' : 'Email Address'}
+                </label>
                 <input type="email" value={signUpData.email} onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })} required placeholder="name@email.com" className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">كلمة المرور</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {lang === 'ar' ? 'كلمة المرور' : 'Password'}
+                </label>
                 <input type="password" value={signUpData.password} onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })} required placeholder="••••••••" className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
               </div>
 
               <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-rose-600 text-white font-bold text-xs cursor-pointer">
-                {loading ? 'جاري الإنشاء...' : 'إنشاء حساب'}
+                {loading ? (lang === 'ar' ? 'جاري الإنشاء...' : 'Creating...') : (lang === 'ar' ? 'إنشاء حساب' : 'Create Account')}
               </button>
             </motion.form>
           )}
@@ -343,14 +354,14 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
             className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 border border-slate-200 dark:border-slate-700 text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
           >
             <span className="text-red-500 font-black text-sm">G</span>
-            <span>متابعة باستخدام Google</span>
+            <span>{lang === 'ar' ? 'متابعة باستخدام Google' : 'Continue with Google'}</span>
           </button>
         </div>
 
         <div className="mt-4 pt-3 text-center border-t border-slate-100 dark:border-slate-800/60">
           <div className="inline-flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>جلسة تسجيل دخول مشفرة ومحمية بواسطة Jopi</span>
+            <span>{lang === 'ar' ? 'جلسة تسجيل دخول مشفرة ومحمية بواسطة Jopi' : 'Encrypted & secure login session by Jopi'}</span>
           </div>
         </div>
 
@@ -360,7 +371,9 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl max-h-[80vh] flex flex-col shadow-2xl text-slate-100">
             <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-slate-200">اختر الدولة</h3>
+              <h3 className="font-bold text-lg text-slate-200">
+                {lang === 'ar' ? 'اختر الدولة' : 'Select Country'}
+              </h3>
               <button type="button" onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white text-xl font-bold px-2 cursor-pointer">✕</button>
             </div>
             
@@ -369,7 +382,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن اسم الدولة أو الرمز..."
+                placeholder={lang === 'ar' ? 'ابحث عن اسم الدولة أو الرمز...' : 'Search country or code...'}
                 className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none text-right"
               />
             </div>
@@ -388,7 +401,9 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{country.flag}</span>
-                    <span className="text-slate-200 font-medium">{country.name}</span>
+                    <span className="text-slate-200 font-medium">
+                      {lang === 'ar' && country.nameAr ? country.nameAr : country.name}
+                    </span>
                   </div>
                   <span className="text-purple-400 font-bold" dir="ltr">{country.dialCode}</span>
                 </button>
