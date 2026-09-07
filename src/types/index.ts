@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp TypeScript Type Definitions
+// jopi TypeScript Type Definitions
 // Core models with Unique Custom User IDs (Sugo/Bigo Style), Voice Rooms & Gifts
 // ============================================================================
 

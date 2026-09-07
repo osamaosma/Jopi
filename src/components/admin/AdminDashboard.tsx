@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Admin Moderation & Analytics Dashboard
+// jopi Admin Moderation & Analytics Dashboard
 // User management, verification toggles, ban actions, reports queue & economy analytics
 // ============================================================================
 
@@ -96,7 +96,7 @@ export const AdminDashboard: React.FC = () => {
             <h1 className="text-base font-black text-slate-900 dark:text-white">
               {t('adminTitle')}
             </h1>
-            <p className="text-[10px] text-slate-500">MingleUp Control Center</p>
+            <p className="text-[10px] text-slate-500">jopi Control Center</p>
           </div>
         </div>
 

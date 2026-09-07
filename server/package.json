@@ -1,7 +1,7 @@
 {
-  "name": "mingleup-backend",
+  "name": "jopi-backend",
   "version": "1.0.0",
-  "description": "Production WebRTC Signaling and Socket.io Server for MingleUp",
+  "description": "Production WebRTC Signaling and Socket.io Server for jopi",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

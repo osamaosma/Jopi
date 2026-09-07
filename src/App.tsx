@@ -1,5 +1,5 @@
 // ============================================================================
-// Nova Main Application Root Component (Direct Integration & Friends Tab Native)
+// jopi Main Application Root Component (Direct Integration & Friends Tab Native)
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -56,7 +56,7 @@ const MainAppContent: React.FC = () => {
   useEffect(() => {
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        localStorage.setItem('mingleup_is_authenticated', 'true');
+        localStorage.setItem('jopi_is_authenticated', 'true');
         if (window.location.hash && window.location.hash.includes('access_token')) {
           window.history.replaceState({}, document.title, window.location.pathname);
         }

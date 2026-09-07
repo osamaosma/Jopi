@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Voice & Video Calling Modals
+// jopi Voice & Video Calling Modals
 // Fullscreen calling interfaces with duration counter, audio pulse, video stream mock & controls
 // ============================================================================
 

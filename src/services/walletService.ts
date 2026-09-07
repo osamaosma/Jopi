@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Wallet & Virtual Coins/Diamonds Service (Production Supabase Version)
+// jopi Wallet & Virtual Coins/Diamonds Service (Production Supabase Version)
 // ============================================================================
 
 import { CoinPackage, CoinTransaction } from '../types';

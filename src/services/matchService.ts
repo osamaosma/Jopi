@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Match Service
+// jopi Match Service
 // Synchronous Local Access + Asynchronous Cloud Sync
 // ============================================================================
 

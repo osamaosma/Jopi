@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Real-Time Client Socket Service (Full Production Version)
+// jopi Real-Time Client Socket Service (Full Production Version)
 // Manages real-time bidirectional communication and Supabase live channels
 // ============================================================================
 
@@ -64,7 +64,7 @@ class SocketService {
 
     // Listen to real-time database insertions in Supabase for messages and gifts
     this.supabaseChannel = supabase
-      .channel('mingleup-realtime-db-changes')
+      .channel('jopi-realtime-db-changes')
       .on(
         'postgres_changes',
         {

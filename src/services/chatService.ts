@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Chat & Messaging Service (Production Supabase + Realtime + Auto-Greet)
+// jopi Chat & Messaging Service (Production Supabase + Realtime + Auto-Greet)
 // ============================================================================
 
 import { Message, Conversation, MessageType, Gift, User } from '../types';

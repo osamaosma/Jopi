@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Discovery Filter Modal
+// jopi Discovery Filter Modal
 // Filter by age, gender, distance, country, interests, and online status
 // ============================================================================
 

@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Profile Onboarding Guard
+// jopi Profile Onboarding Guard
 // Mandates completion of minimum profile attributes before accessing discovery
 // ============================================================================
 

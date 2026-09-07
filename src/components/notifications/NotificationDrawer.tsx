@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Notifications Center Drawer
+// jopi Notifications Center Drawer
 // Categorized activity feed (Matches, Likes, Gifts, Messages, System)
 // ============================================================================
 

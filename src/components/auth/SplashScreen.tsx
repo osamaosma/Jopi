@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Splash Screen
+// jopi Splash Screen
 // Branded launch animation with smooth auto-transition & tap-to-skip
 // ============================================================================
 
@@ -76,7 +76,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         className="text-center mt-6 z-10 px-4"
       >
         <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-white via-brand-200 to-rose-300 bg-clip-text text-transparent">
-          MingleUp
+          jopi
         </h1>
         <p className="text-sm text-slate-400 mt-2 font-medium">
           {t('tagline')}

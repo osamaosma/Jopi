@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Cloud Image Upload Service (Supabase Storage)
+// jopi Cloud Image Upload Service (Supabase Storage)
 // ============================================================================
 
 import { supabase } from './supabaseClient';

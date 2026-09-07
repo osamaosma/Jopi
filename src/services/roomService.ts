@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Voice & Video Party Rooms Service (Sugo-Style Production Version)
+// jopi Voice & Video Party Rooms Service (jopi-Style Production Version)
 // ============================================================================
 
 import { VoiceRoom, RoomMessage, User, RoomCategory, Gift } from '../types';
@@ -9,9 +9,9 @@ import { UserService } from './userService';
 import { supabase } from './supabaseClient';
 
 const STORAGE_KEYS_ROOMS = {
-  ROOMS_LIST: 'mingleup_voice_rooms',
-  ROOM_MESSAGES: 'mingleup_room_messages',
-  ROOM_MIC_ANIMATIONS: 'mingleup_room_mic_animations',
+  ROOMS_LIST: 'jopi_voice_rooms',
+  ROOM_MESSAGES: 'jopi_room_messages',
+  ROOM_MIC_ANIMATIONS: 'jopi_room_mic_animations',
 };
 
 export interface RoomBackgroundOption {

@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Messages & System Notifications Screen (SUGO Style Final Fix)
+// jopi Messages & System Notifications Screen (SUGO Style Final Fix)
 // ============================================================================
 
 import React, { useState } from 'react';

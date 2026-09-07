@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Voice & Video Party Rooms Explorer (Sugo-Style)
+// jopi Voice & Video Party Rooms Explorer (jopi-Style)
 // Live room categories, audio equalizer cards, audience counters & create room trigger
 // ============================================================================
 

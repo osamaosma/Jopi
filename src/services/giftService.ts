@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Virtual Gift Service (Production Supabase Version)
+// jopi Virtual Gift Service (Production Supabase Version)
 // ============================================================================
 
 import { Gift, GiftTransaction } from '../types';

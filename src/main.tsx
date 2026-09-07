@@ -8,7 +8,7 @@ import { StorageService } from './services/storageService';
 try {
   StorageService.initializeDefaults();
 } catch (error) {
-  console.error('[MingleUp] Startup storage initialization failed:', error);
+  console.error('[jopi] Startup storage initialization failed:', error);
 }
 
 interface ErrorBoundaryProps {
@@ -59,7 +59,7 @@ class RootErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
             marginBottom: '16px'
           }}>✨</div>
           <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
-            جاري تهيئة بيانات تطبيق MingleUp
+            جاري تهيئة بيانات تطبيق jopi
           </h2>
           <p style={{ fontSize: '13px', color: '#94a3b8', maxWidth: '380px', marginBottom: '24px' }}>
             اضغط على الزر أدناه لإعادة ضبط البيانات التجريبية وتشغيل التطبيق فوراً.

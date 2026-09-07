@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Voice & Video Party Rooms Mock Data (Sugo-Inspired)
+// jopi Voice & Video Party Rooms Mock Data (Sugo-Inspired)
 // Pre-populated live rooms with hosts, mic seats, and active audience
 // ============================================================================
 

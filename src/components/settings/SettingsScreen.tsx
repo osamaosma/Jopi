@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Settings Screen
+// jopi Settings Screen
 // Account preferences, Privacy, Language, Theme, Blocked Users, Terms & Account Deletion
 // ============================================================================
 
@@ -283,7 +283,7 @@ export const SettingsScreen: React.FC = () => {
 
               <div className="overflow-y-auto space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed pr-1">
                 <p>
-                  مرحباً بك في <strong>MingleUp</strong>. تلتزم المنصة بأعلى معايير الخصوصية وحماية بيانات المستخدمين وأمان المحادثات المشفرة.
+                  مرحباً بك في <strong>jopi</strong>. تلتزم المنصة بأعلى معايير الخصوصية وحماية بيانات المستخدمين وأمان المحادثات المشفرة.
                 </p>
                 <h4 className="font-bold text-slate-900 dark:text-white">1. السلوك والآداب</h4>
                 <p>

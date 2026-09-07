@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Main Discover Screen
+// jopi Main Discover Screen
 // Swipe card deck, action controls (Pass, Like, Super Like, Gift, Undo), and empty state
 // ============================================================================
 

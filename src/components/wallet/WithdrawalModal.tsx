@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Diamonds Withdrawal & Cashout Modal (Sugo-Style Host Earnings)
+// jopi Diamonds Withdrawal & Cashout Modal (Sugo-Style Host Earnings)
 // ============================================================================
 
 import React, { useState } from 'react';

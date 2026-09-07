@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp WebRTC & Audio/Video Call Engine
+// jopi WebRTC & Audio/Video Call Engine
 // Production STUN/TURN Fallback Matrix & Call Session Manager
 // ============================================================================
 

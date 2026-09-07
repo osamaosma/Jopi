@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Massive Gift Bank (200+ Sugo/Bigo Style Virtual Gifts)
+// jopi Massive Gift Bank (200+ Sugo/Bigo Style Virtual Gifts)
 // Prices range from 200 to 2,000,000 coins across multiple luxury tiers
 // ============================================================================
 
@@ -106,7 +106,7 @@ export const MOCK_INTERESTS = [
 export const CURRENT_USER: User = {
   id: 'current-user-001',
   custom_id: '8849201', 
-  email: 'osama.dev@mingleup.app',
+  email: 'osama.dev@jopi.app',
   phone_number: '+966 50 123 4567',
   display_name: 'أسامة النجار',
   date_of_birth: '1998-05-14',
@@ -129,7 +129,7 @@ export const CURRENT_USER: User = {
   coin_balance: 1500,
   role: 'user',
   job_title: 'Product Engineer',
-  company: 'MingleUp',
+  company: 'jopi',
   height_cm: 180,
   relationship_goals: 'تكوين صداقات ومعارف راقية',
   distance_km: 0,
@@ -143,7 +143,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'user-002',
     custom_id: '8810294',
-    email: 'sarah.k@mingleup.app',
+    email: 'sarah.k@jopi.app',
     phone_number: '+966 55 987 6543',
     display_name: 'سارة خالد',
     date_of_birth: '2000-03-21', age: 24, gender: 'female',
@@ -162,7 +162,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'user-003',
     custom_id: '8859103',
-    email: 'layla.m@mingleup.app', phone_number: '+971 50 456 7890',
+    email: 'layla.m@jopi.app', phone_number: '+971 50 456 7890',
     display_name: 'ليلى المنصور',
     date_of_birth: '1999-08-12', age: 25, gender: 'female',
     country: 'الإمارات', city: 'دبي',
@@ -180,7 +180,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'user-004',
     custom_id: '8872019',
-    email: 'rayan.a@mingleup.app', phone_number: '+966 54 321 0987',
+    email: 'rayan.a@jopi.app', phone_number: '+966 54 321 0987',
     display_name: 'ريان العتيبي',
     date_of_birth: '1997-11-05', age: 27, gender: 'male',
     country: 'السعودية', city: 'جدة',
@@ -198,7 +198,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'user-005',
     custom_id: '8893412',
-    email: 'nour.h@mingleup.app', phone_number: '+20 10 1234 5678',
+    email: 'nour.h@jopi.app', phone_number: '+20 10 1234 5678',
     display_name: 'نور الهدى',
     date_of_birth: '2001-07-19', age: 23, gender: 'female',
     country: 'مصر', city: 'القاهرة',
@@ -216,7 +216,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'user-006',
     custom_id: '8865120',
-    email: 'omar.f@mingleup.app', phone_number: '+966 56 789 0123',
+    email: 'omar.f@jopi.app', phone_number: '+966 56 789 0123',
     display_name: 'عمر الفاروق',
     date_of_birth: '1996-04-30', age: 28, gender: 'male',
     country: 'السعودية', city: 'الرياض',

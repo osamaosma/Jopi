@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp In-Room Virtual Gift Modal & Sound Effects Bar
+// jopi In-Room Virtual Gift Modal & Sound Effects Bar
 // Interactive gifting to Host, specific Mic seats, or All Mics (8X) with animations
 // ============================================================================
 

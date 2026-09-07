@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Other User Profile Detail Modal
+// jopi Other User Profile Detail Modal
 // Fullscreen view with photo gallery, bio, interests, languages, and action dock
 // ============================================================================
 

@@ -12,13 +12,13 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem('mingleup_lang') as Language) || 'ar';
+    return (localStorage.getItem('jopi_lang') as Language) || 'ar';
   });
 
   const isRTL = language === 'ar' || language === 'ur';
 
   useEffect(() => {
-    localStorage.setItem('mingleup_lang', language);
+    localStorage.setItem('jopi_lang', language);
     document.documentElement.lang = language;
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
   }, [language, isRTL]);

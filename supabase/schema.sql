@@ -1,5 +1,5 @@
 -- ============================================================================
--- MingleUp Database Schema (Supabase / PostgreSQL)
+-- jopi Database Schema (Supabase / PostgreSQL)
 -- Complete schema for social discovery, matching, chat, calls, gifts, wallet,
 -- and Live Voice & Video Party Rooms (Sugo-Style)
 -- ============================================================================

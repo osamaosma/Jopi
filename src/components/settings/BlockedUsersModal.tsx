@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Blocked Users Modal & Report User Modal
+// jopi Blocked Users Modal & Report User Modal
 // Safety, Privacy moderation tools and reporting reasons handling
 // ============================================================================
 

@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp WebRTC Audio Service for Live Voice Rooms (Complete Production Version)
+// jopi WebRTC Audio Service for Live Voice Rooms (Complete Production Version)
 // ============================================================================
 
 export class AudioService {

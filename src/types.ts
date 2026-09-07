@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Flexible & Permissive Types (The Ultimate Solution)
+// jopi Flexible & Permissive Types (The Ultimate Solution)
 // ============================================================================
 
 export type MessageType = 'text' | 'image' | 'voice' | 'audio' | 'gift' | 'system';

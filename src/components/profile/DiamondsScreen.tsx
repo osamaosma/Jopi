@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp My Diamonds & Cashout Screen (Sugo-Style Host Earnings)
+// jopi My Diamonds & Cashout Screen (jopi-Style Host Earnings)
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';

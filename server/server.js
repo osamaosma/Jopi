@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Real-Time Central Backend Server
+// jopi Real-Time Central Backend Server
 // Express + Socket.io + WebRTC Signaling + Voice Rooms + ICE Matrix
 // ============================================================================
 
@@ -95,12 +95,12 @@ let liveRooms = [
 // ============================================================================
 
 app.get('/', (req, res) => {
-  res.send('MingleUp Real-time Backend is running smoothly 🚀');
+  res.send('jopi Real-time Backend is running smoothly 🚀');
 });
 
 app.get('/api/health', (req, res) => {
   res.json({
-    service: 'mingleup-backend',
+    service: 'jopi-backend',
     version: '1.0.0',
     status: 'online',
     timestamp: new Date().toISOString(),
@@ -327,5 +327,5 @@ io.on('connection', (socket) => {
 
 // Start Server
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 MingleUp Server running on port ${PORT}`);
+  console.log(`🚀 jopi Server running on port ${PORT}`);
 });

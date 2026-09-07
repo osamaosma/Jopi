@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Private Chat Screen & Friends Hub (SUGO Style Integrated)
+// jopi Private Chat Screen & Friends Hub (SUGO Style Integrated)
 // ============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -212,7 +212,7 @@ export const ChatScreen: React.FC = () => {
                     className="w-full px-4 py-3 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-800 dark:text-slate-100 cursor-pointer"
                   >
                     <UserPlus className="w-4 h-4 text-brand-500" />
-                    <span>Add Friend (إضافة)</span>
+                    <span>Add (إضافة)</span>
                   </button>
                   <button
                     onClick={() => {

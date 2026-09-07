@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Header Component
+// jopi Header Component
 // Top bar with branding, coin wallet chip, filter, notifications, and quick toggles
 // ============================================================================
 
@@ -44,7 +44,7 @@ export const Header: React.FC = () => {
           <div>
             <div className="flex items-center gap-1">
               <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-brand-600 via-rose-500 to-amber-500 bg-clip-text text-transparent">
-                MingleUp
+                jopi
               </span>
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
                 PRO

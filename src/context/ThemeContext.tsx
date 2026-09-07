@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Theme Context (Dark Mode & Light Mode)
+// jopi Theme Context (Dark Mode & Light Mode)
 // Smooth UI theme management with class-based persistence
 // ============================================================================
 

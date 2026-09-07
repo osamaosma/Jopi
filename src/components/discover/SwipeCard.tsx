@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Swipe Card Component
+// jopi Swipe Card Component
 // Full gesture-driven interactive Tinder card with Framer Motion drag physics
 // ============================================================================
 

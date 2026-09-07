@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Global Application Context (Production Safe Version)
+// jopi Global Application Context (Production Safe Version)
 // ============================================================================
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -14,7 +14,7 @@ import { NotificationService } from '../services/notificationService';
 import { socketService } from '../services/socketService';
 import { ChatService } from '../services/chatService';
 
-export type NavTab = 'discover' | 'party' | 'messages' | 'friends' | 'matches' | 'wallet' | 'moments' | 'profile' | 'admin';
+export type NavTab = 'discover' | 'party' | 'messages' | 'matches' | 'wallet' | 'moments' | 'profile' | 'admin';
 
 export interface ToastMessage {
   id: string;

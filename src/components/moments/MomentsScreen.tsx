@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Moments Screen (SUGO Style - Exact 3-Dots Menu, Share to Friends & Family)
+// jopi Moments Screen (jopi Style - Exact 3-Dots Menu, Share to Friends & Family)
 // ============================================================================
 
 import React, { useState, useRef } from 'react';

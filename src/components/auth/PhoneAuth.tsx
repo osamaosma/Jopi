@@ -74,7 +74,7 @@ export const PhoneAuth: React.FC = () => {
     if (error) {
       setMessage(`رمز التحقق غير صحيح: ${error.message}`);
     } else {
-      setMessage('تم تسجيل الدخول بنجاح! 🎉 أهلاً بك في تطبيق Nova');
+      setMessage('تم تسجيل الدخول بنجاح! 🎉 أهلاً بك في تطبيق Jopi');
       // هنا يمكنك توجيه المستخدم لداخل التطبيق الرئيسي
     }
   };
@@ -82,7 +82,7 @@ export const PhoneAuth: React.FC = () => {
   return (
     <div className="max-w-md mx-auto p-6 bg-slate-900 text-slate-100 rounded-2xl shadow-xl border border-slate-800">
       <h2 className="text-2xl font-bold mb-6 text-center text-purple-400">
-        تسجيل الدخول برقم الهاتف - Nova
+        تسجيل الدخول برقم الهاتف - Jopi
       </h2>
 
       {message && (

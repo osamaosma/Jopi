@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Match Celebration Modal
+// jopi Match Celebration Modal
 // Fullscreen celebratory popup with confetti, meeting avatars, and direct chat action
 // ============================================================================
 

@@ -1,6 +1,6 @@
-# MingleUp
+# jopi
 
-MingleUp is a React + Vite + Capacitor Android application with an Express + Socket.IO backend.
+jopi is a React + Vite + Capacitor Android application with an Express + Socket.IO backend.
 
 ## Clean project rules
 

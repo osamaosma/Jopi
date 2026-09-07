@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Avatar Component
+// jopi Avatar Component
 // Rounded user photo with online status indicator and verified badge
 // ============================================================================
 

@@ -1,8 +1,8 @@
 // ============================================================================
-// Nova App Runtime Configuration shared by web and native builds.
+// jopi App Runtime Configuration shared by web and native builds.
 // ============================================================================
 
-const LIVE_BACKEND_URL = 'https://mingleup-backend-qwbz.onrender.com';
+const LIVE_BACKEND_URL = 'https://jopi-backend-qwbz.onrender.com';
 const LIVE_SUPABASE_URL = 'https://whmpuhjrkuivhollodyz.supabase.co';
 
 // مفتاح الربط العام لخدمة Supabase
@@ -14,7 +14,7 @@ const rawSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || LIVE_SUP
 const rawSupabaseKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || LIVE_SUPABASE_ANON_KEY;
 
 export const APP_CONFIG = {
-  appName: 'Nova',
+  appName: 'jopi',
   version: '1.0.0',
   apiUrl: rawApiUrl.replace(/\/$/, ''),
   socketUrl: rawSocketUrl.replace(/\/$/, ''),

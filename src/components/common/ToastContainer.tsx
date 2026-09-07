@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Toast Notifications Container
+// jopi Toast Notifications Container
 // Animated toast alerts for feedback on actions
 // ============================================================================
 

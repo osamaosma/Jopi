@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Create Party Room Modal
+// jopi Create Party Room Modal
 // Setup custom room title, category, audio/video stage mode & background theme
 // ============================================================================
 

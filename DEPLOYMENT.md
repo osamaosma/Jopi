@@ -1,4 +1,4 @@
-# MingleUp — clean build & two-phone test
+# jopi — clean build & two-phone test
 
 ## 1. Install from a clean checkout
 

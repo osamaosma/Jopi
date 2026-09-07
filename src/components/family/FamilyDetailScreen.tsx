@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Family Detail & Group Chat Screen (SUGO Style)
+// jopi Family Detail & Group Chat Screen
 // ============================================================================
 
 import React, { useState } from 'react';

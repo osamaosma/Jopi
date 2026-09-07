@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Bottom Navigation Bar (SUGO Style - Friends Removed from Bottom)
+// jopi Bottom Navigation Bar (SUGO Style - Friends Removed from Bottom)
 // ============================================================================
 
 import React from 'react';

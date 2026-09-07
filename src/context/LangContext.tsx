@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Global 9-Language Localization Context
+// jopi Global 9-Language Localization Context
 // Full support for AR (RTL), UR (RTL), EN, FR, ES, TR, DE, RU, and ID
 // ============================================================================
 
@@ -31,8 +31,8 @@ export const AVAILABLE_LANGUAGES: LanguageOption[] = [
 export const TRANSLATIONS: Record<string, Record<Language, string>> = {
   // App Branding
   appName: {
-    ar: 'Nova', ur: 'Nova', en: 'Nova', fr: 'Nova', es: 'Nova',
-    tr: 'Nova', de: 'Nova', ru: 'Nova', id: 'Nova',
+    ar: 'jopi', ur: 'jopi', en: 'jopi', fr: 'jopi', es: 'jopi',
+    tr: 'jopi', de: 'jopi', ru: 'jopi', id: 'jopi',
   },
   tagline: {
     ar: 'تواصل، اكتشف، وتطابق بأسلوب راقٍ',
@@ -223,7 +223,7 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     tr: 'Güzel bir mesaj yazın...', de: 'Schreibe eine Nachricht...', ru: 'Напишите сообщение...', id: 'Ketik pesan...',
   },
 
-  // Additional Settings / Policies Keys for Nova Profile Integration
+  // Additional Settings / Policies Keys for jopi Profile Integration
   accountSecurity: {
     ar: 'أمان الحساب', ur: 'اکاؤنٹ سیکیورٹی', en: 'Account Security', fr: 'Sécurité du compte', es: 'Seguridad de la cuenta',
     tr: 'Hesap Güvenliği', de: 'Kontosicherheit', ru: 'Безопасность аккаунта', id: 'Keamanan Akun',
@@ -249,8 +249,8 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     tr: 'Önbelleği Temizle', de: 'Cache leeren', ru: 'Очистить кэш', id: 'Bersihkan cache',
   },
   aboutApp: {
-    ar: 'حول تطبيق Nova', ur: 'Nova کے بارے میں', en: 'About Nova', fr: 'À propos de Nova', es: 'Acerca de Nova',
-    tr: 'Nova Hakkında', de: 'Über Nova', ru: 'О приложении Nova', id: 'Tentang Nova',
+    ar: 'حول تطبيق jopi', ur: 'jopi کے بارے میں', en: 'About jopi', fr: 'À propos de jopi', es: 'Acerca de Jopi',
+    tr: 'jopi Hakkında', de: 'Über jopi', ru: 'О приложении jopi', id: 'Tentang jopi',
   },
   switchAccount: {
     ar: 'تبديل الحساب', ur: 'اکاؤنٹ تبدیل کریں', en: 'Switch Account', fr: 'Changer de compte', es: 'Cambiar cuenta',

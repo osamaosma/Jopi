@@ -1,5 +1,5 @@
 // ============================================================================
-// Nova App International Country Codes Database (Comprehensive Edition - All Countries A-Z)
+// Jopi App International Country Codes Database (Comprehensive Edition - All Countries A-Z)
 // ============================================================================
 
 export interface Country {

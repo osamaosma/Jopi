@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Notification Service
+// jopi Notification Service
 // In-app notifications center, unread badges, and toast event dispatching
 // ============================================================================
 
