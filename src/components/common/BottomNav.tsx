@@ -1,9 +1,9 @@
 // ============================================================================
-// MingleUp Bottom Navigation Bar (SUGO Style with Friends Tab Integrated)
+// MingleUp Bottom Navigation Bar (SUGO Style - Friends Removed from Bottom)
 // ============================================================================
 
 import React from 'react';
-import { Flame, Radio, MessageCircle, Users, Sparkles, User } from 'lucide-react';
+import { Flame, Radio, MessageCircle, Sparkles, User } from 'lucide-react';
 import { useApp, NavTab } from '../../context/AppContext';
 import { useLang } from '../../context/LangContext';
 import { useAuth } from '../../context/AuthContext';
@@ -34,11 +34,6 @@ export const BottomNav: React.FC = () => {
       label: lang === 'ar' ? 'الرسائل' : 'Messages',
       icon: <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />,
       badge: totalUnreadMessages,
-    },
-    {
-      id: 'friends', // تبويب الأصدقاء المضاف رسمياً
-      label: lang === 'ar' ? 'الأصدقاء' : 'Friends',
-      icon: <Users className="w-5 h-5 sm:w-6 sm:h-6 text-brand-500" />,
     },
     {
       id: 'wallet', // نستخدم معرف wallet برمجياً لللحظات

@@ -16,7 +16,7 @@ export interface FriendRequest {
 }
 
 export class FriendService {
-  // إرسال طلب صداقة لمستخدم آخر عبر الـ ID
+  // إرسال طلب صداقة لمستخدم آخر عبر الـ ID العادي
   static async sendFriendRequest(receiverId: string): Promise<{ success: boolean; error?: string }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'غير مسجل الدخول' };
@@ -25,7 +25,6 @@ export class FriendService {
       return { success: false, error: 'لا يمكنك إرسال طلب صداقة لنفسك' };
     }
 
-    // التحقق هل الطلب موجود مسبقاً
     const { data: existing } = await supabase
       .from('friend_requests')
       .select('*')
@@ -55,6 +54,54 @@ export class FriendService {
     return { success: true };
   }
 
+  // إرسال طلب صداقة عبر معرف المستخدم الظاهري (Custom ID / ID)
+  static async sendFriendRequestByCustomId(currentUserId: string, targetCustomId: string): Promise<boolean> {
+    try {
+      const { data: targetUser, error: searchError } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`custom_id.eq.${targetCustomId},id.eq.${targetCustomId}`)
+        .maybeSingle();
+
+      if (searchError || !targetUser) {
+        console.error('User not found by ID:', searchError);
+        return false;
+      }
+
+      if (targetUser.id === currentUserId) {
+        return false;
+      }
+
+      const { data: existing } = await supabase
+        .from('friend_requests')
+        .select('*')
+        .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${targetUser.id}),and(sender_id.eq.${targetUser.id},receiver_id.eq.${currentUserId})`)
+        .maybeSingle();
+
+      if (existing) {
+        return false;
+      }
+
+      const { error: insertError } = await supabase
+        .from('friend_requests')
+        .insert({
+          sender_id: currentUserId,
+          receiver_id: targetUser.id,
+          status: 'pending'
+        });
+
+      if (insertError) {
+        console.error('Error inserting friend request:', insertError);
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Unexpected error in sendFriendRequestByCustomId:', err);
+      return false;
+    }
+  }
+
   // جلب طلبات الصداقة الواردة المعلقة
   static async getPendingRequests(): Promise<FriendRequest[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -68,7 +115,6 @@ export class FriendService {
 
     if (error || !data) return [];
 
-    // جلب بيانات المرسل لكل طلب
     const requestsWithSenders: FriendRequest[] = [];
     for (const req of data) {
       const { data: senderProfile } = await supabase

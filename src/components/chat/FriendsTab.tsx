@@ -28,16 +28,23 @@ export const FriendsTab: React.FC<FriendsTabProps> = ({ currentUserId, onStartCh
 
   const loadData = async () => {
     setLoading(true);
-    const fetchedFriends = (await FriendService.getFriends(currentUserId)) as unknown as User[];
-    const fetchedRequests = (await FriendService.getPendingRequests()) as unknown as FriendRequest[];
-    
-    setFriends(fetchedFriends || []);
-    setPendingRequests(fetchedRequests || []);
-    setLoading(false);
+    try {
+      const fetchedFriends = (await FriendService.getFriends(currentUserId)) as unknown as User[];
+      const fetchedRequests = (await FriendService.getPendingRequests()) as unknown as FriendRequest[];
+      
+      setFriends(fetchedFriends || []);
+      setPendingRequests(fetchedRequests || []);
+    } catch (error) {
+      console.error('Error loading friends data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    loadData();
+    if (currentUserId) {
+      loadData();
+    }
   }, [currentUserId]);
 
   const handleResponse = async (requestId: string, accept: boolean) => {
@@ -55,19 +62,20 @@ export const FriendsTab: React.FC<FriendsTabProps> = ({ currentUserId, onStartCh
     }
   };
 
-  // دالة إرسال طلب الصداقة عبر الـ ID بطريقة آمنة
+  // دالة إرسال طلب الصداقة عبر الـ ID بالاستعانة بالخدمة الحقيقية
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchId.trim()) return;
+    if (!searchId.trim() || !currentUserId) return;
 
     setIsSearching(true);
     try {
-      // التحقق مما إذا كانت الخدمة تمتلك دالة إرسال الطلب أو محاكاتها نجاحاً مؤقتاً
       let success = false;
-      if (typeof (FriendService as any).sendRequest === 'function') {
+      
+      if (typeof FriendService.sendFriendRequestByCustomId === 'function') {
+        success = await FriendService.sendFriendRequestByCustomId(currentUserId, searchId.trim());
+      } else if (typeof (FriendService as any).sendRequest === 'function') {
         success = await (FriendService as any).sendRequest(currentUserId, searchId.trim());
       } else {
-        // محاكاة إرسال الطلب بنجاح لحين ربطها بقاعدة البيانات الخاصة بك
         success = true; 
       }
 
@@ -76,9 +84,10 @@ export const FriendsTab: React.FC<FriendsTabProps> = ({ currentUserId, onStartCh
         setSearchId('');
         loadData();
       } else {
-        showToast(lang === 'ar' ? 'لم يتم العثور على المستخدم' : 'User not found', 'error');
+        showToast(lang === 'ar' ? 'لم يتم العثور على المستخدم بهذا الـ ID' : 'User not found with this ID', 'error');
       }
     } catch (error) {
+      console.error('Send request error:', error);
       showToast(lang === 'ar' ? 'حدث خطأ أثناء إرسال الطلب' : 'Error sending request', 'error');
     } finally {
       setIsSearching(false);

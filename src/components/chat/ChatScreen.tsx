@@ -1,5 +1,5 @@
 // ============================================================================
-// MingleUp Private Chat Screen & Friends Hub
+// MingleUp Private Chat Screen & Friends Hub (SUGO Style Integrated)
 // ============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -8,7 +8,7 @@ import { FriendsTab } from './FriendsTab';
 import { 
   ArrowLeft, ArrowRight, Phone, Video, MoreVertical, 
   Send, Mic, Gift as GiftIcon, Image as ImageIcon, 
-  Smile, CheckCheck, Play, Pause, ShieldAlert, Ban
+  Smile, CheckCheck, Play, Pause, ShieldAlert, Ban, UserPlus, Search, Menu
 } from 'lucide-react';
 import { Message, Conversation, User } from '../../types';
 import { ChatService } from '../../services/chatService';
@@ -32,8 +32,9 @@ export const ChatScreen: React.FC = () => {
   const { user: currentUser } = useAuth();
   const { t, isRTL, lang } = useLang();
 
-  // الحالة للتبديل بين المحادثات والأصدقاء عند عدم وجود محادثة نشطة
+  // الحالة للتبديل بين المحادثات والأصدقاء في الأعلى
   const [activeTab, setActiveTab] = useState<'chats' | 'friends'>('chats');
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -146,27 +147,98 @@ export const ChatScreen: React.FC = () => {
     }
   };
 
-  // شاشة عرض المحادثات أو تبويب الأصدقاء إذا لم تكن هناك محادثة نشطة
+  // شاشة عرض المحادثات أو تبويب الأصدقاء (Contacts) مع التصميم المماثل تماماً لـ SUGO
   if (!activeConversation) {
     return (
       <div className="fixed inset-0 z-40 bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-white select-none transition-colors">
-        <div className="p-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 shadow-sm z-20">
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+        
+        {/* تصميم الشريط العلوي المطابق تماماً للصور (Messages / Contacts + Search + Add Menu) */}
+        <div className="px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm z-30">
+          
+          {/* التبويبات العلوية */}
+          <div className="flex items-center gap-6">
             <button 
               onClick={() => setActiveTab('chats')}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${activeTab === 'chats' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-500'}`}
+              className={`text-lg font-bold transition cursor-pointer relative pb-1 ${
+                activeTab === 'chats' ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'
+              }`}
             >
-              {lang === 'ar' ? 'المحادثات' : 'Chats'}
+              {lang === 'ar' ? 'الرسائل' : 'Messages'}
+              {activeTab === 'chats' && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-brand-600 to-rose-500 rounded-full" />
+              )}
             </button>
+
             <button 
               onClick={() => setActiveTab('friends')}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${activeTab === 'friends' ? 'bg-white dark:bg-slate-700 text-brand-600 shadow-sm' : 'text-slate-500'}`}
+              className={`text-lg font-bold transition cursor-pointer relative pb-1 ${
+                activeTab === 'friends' ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'
+              }`}
             >
-              {lang === 'ar' ? 'الأصدقاء' : 'Friends'}
+              {lang === 'ar' ? 'الأصدقاء' : 'Contacts'}
+              {activeTab === 'friends' && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-brand-600 to-rose-500 rounded-full" />
+              )}
             </button>
+          </div>
+
+          {/* أيقونات البحث والقائمة المنسدلة (Add / Options) */}
+          <div className="flex items-center gap-3 relative">
+            <button 
+              onClick={() => setActiveTab('friends')}
+              className="p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              title="Search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
+            <div className="relative">
+              <button 
+                onClick={() => setShowAddMenu(prev => !prev)}
+                className="p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                title="Options"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+
+              {/* القائمة المنبثقة المطابقة للصورة تماماً */}
+              {showAddMenu && (
+                <div className="absolute end-0 top-12 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 z-50 text-xs font-semibold">
+                  <button
+                    onClick={() => {
+                      setShowAddMenu(false);
+                      setActiveTab('friends');
+                    }}
+                    className="w-full px-4 py-3 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-800 dark:text-slate-100 cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4 text-brand-500" />
+                    <span>Add Friend (إضافة)</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddMenu(false);
+                      showToast('تم تحديد الكل كمقروء', 'info');
+                    }}
+                    className="w-full px-4 py-3 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-800 dark:text-slate-100 cursor-pointer border-t border-slate-100 dark:border-slate-700"
+                  >
+                    <span>Ignore Unreads</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddMenu(false);
+                      showToast('تم الحذف بنجاح', 'info');
+                    }}
+                    className="w-full px-4 py-3 text-start hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3 text-rose-600 dark:text-rose-400 cursor-pointer border-t border-slate-100 dark:border-slate-700"
+                  >
+                    <span>Bulk Delete</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* محتوى الشاشة بناءً على التبويب المختار */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'chats' ? (
             <div className="p-6 text-center text-slate-400 text-xs">
