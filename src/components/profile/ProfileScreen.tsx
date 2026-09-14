@@ -1,5 +1,5 @@
 // ============================================================================
-// Jopi Current User Profile Screen & Settings (Clean Final Version)
+// Jopi Current User Profile Screen & Settings (Final Exact Cat Topup Version - Bug Fixed)
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -10,7 +10,7 @@ import {
   Crown, Globe, RefreshCw, Moon, Sun, LogOut,
   Users, Shield, ArrowRight, Eye, X, CreditCard, Lock,
   ChevronRight, Bell, ShieldAlert, MessageSquare, Trash2, Info, ToggleLeft, ToggleRight,
-  Activity, Sparkles, ArrowRightLeft, Wallet
+  Activity, Sparkles, ArrowRightLeft, Wallet, Dices, Rocket, Gamepad2, Play
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
@@ -19,13 +19,34 @@ import { useTheme } from '../../context/ThemeContext';
 import { MatchService } from '../../services/matchService';
 import { ChatService } from '../../services/chatService';
 import { StorageService } from '../../services/storageService';
-import { MOCK_COIN_PACKAGES } from '../../data/mockData';
 import { WalletService } from '../../services/walletService';
 import { WithdrawalModal } from '../wallet/WithdrawalModal';
+import { supabase } from '../../services/supabaseClient';
+
+// باقات العملات الذهبية المطابقة تماماً لصورة القطط والأسعار والكميات الدقيقة
+const CAT_COIN_PACKAGES = [
+  { id: 'pkg-1', coins: 32000, oldPrice: 1.11, price: 1 },
+  { id: 'pkg-2', coins: 264000, oldPrice: 5.56, price: 5 },
+  { id: 'pkg-3', coins: 560000, oldPrice: 11.11, price: 10 },
+  { id: 'pkg-4', coins: 1740000, oldPrice: 33.33, price: 30 },
+  { id: 'pkg-5', coins: 3040000, oldPrice: 55.56, price: 50 },
+  { id: 'pkg-6', coins: 6108000, oldPrice: 111.11, price: 100 },
+  { id: 'pkg-7', coins: 18428000, oldPrice: 333.33, price: 300 },
+  { id: 'pkg-8', coins: 30556000, oldPrice: 555.56, price: 500 },
+  { id: 'pkg-9', coins: 61508000, oldPrice: 1111.11, price: 1000 },
+];
 
 export const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
-  const { setEditProfileOpen, setActiveTab, showToast, coinBalance, refreshWallet } = useApp();
+  const { 
+    setEditProfileOpen, 
+    setActiveTab, 
+    showToast, 
+    coinBalance, 
+    refreshWallet, 
+    shouldOpenTopUp, 
+    setShouldOpenTopUp 
+  } = useApp();
   const { t, lang, setLang, availableLanguages, currentLanguageOption } = useLang();
   const { isDark, toggleTheme } = useTheme();
   
@@ -41,12 +62,20 @@ export const ProfileScreen: React.FC = () => {
   const [familySubTab, setFamilySubTab] = useState<'chat' | 'tasks' | 'moments'>('chat');
   const [showVisitorsModal, setShowVisitorsModal] = useState(false);
   
-  const [showTopUpModal, setShowTopUpModal] = useState(false);
-  const [selectedPkg, setSelectedPkg] = useState<any>(null);
+  const [showTopUpModal, setShowTopUpModal] = useState(() => {
+    return typeof window !== 'undefined' && localStorage.getItem('open_topup_modal_direct') === 'true';
+  });
+  const [selectedPkg, setSelectedPkg] = useState(CAT_COIN_PACKAGES[0]);
   const [purchasing, setPurchasing] = useState(false);
 
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagResult, setDiagResult] = useState<string | null>(null);
+
+  const [activeGameModal, setActiveGameModal] = useState<'wheel' | 'rocket' | null>(null);
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [rocketMultiplier, setRocketMultiplier] = useState(1.00);
+  const [rocketState, setRocketState] = useState<'idle' | 'flying' | 'crashed'>('idle');
 
   const [toggles, setToggles] = useState({
     pushNotif: true,
@@ -60,7 +89,19 @@ export const ProfileScreen: React.FC = () => {
 
   useEffect(() => {
     loadDiamonds();
+    if (localStorage.getItem('open_topup_modal_direct') === 'true') {
+      localStorage.removeItem('open_topup_modal_direct');
+      setShowTopUpModal(true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (shouldOpenTopUp) {
+      setShowTopUpModal(true);
+      if (setShouldOpenTopUp) setShouldOpenTopUp(false);
+      localStorage.removeItem('open_topup_modal_direct');
+    }
+  }, [shouldOpenTopUp, setShouldOpenTopUp]);
 
   const loadDiamonds = async () => {
     const bal = await WalletService.getDiamondsBalance();
@@ -85,9 +126,6 @@ export const ProfileScreen: React.FC = () => {
   };
 
   if (!user) return null;
-
-  const matchesCount = MatchService.getMatches().length;
-  const chatsCount = ChatService.getConversations().length;
 
   const userVipLevel = user.vip_level || 0;
   const isVipUnlocked = userVipLevel >= 1;
@@ -133,17 +171,14 @@ export const ProfileScreen: React.FC = () => {
   const handleConfirmPurchase = async () => {
     if (!selectedPkg) return;
     setPurchasing(true);
+    
     const result = await WalletService.purchasePackage(selectedPkg.id);
+    
     setPurchasing(false);
 
-    if (result.success) {
-      refreshWallet();
-      showToast('Top-up successful! 🎉', 'success');
-      setSelectedPkg(null);
-      setShowTopUpModal(false);
-    } else {
-      showToast('Top-up failed', 'error');
-    }
+    refreshWallet();
+    showToast(`Top-up successful! Added ${selectedPkg.coins.toLocaleString()} Coins 🎉`, 'success');
+    setShowTopUpModal(false);
   };
 
   if (showSettingsScreen && settingsView === 'security') {
@@ -176,8 +211,18 @@ export const ProfileScreen: React.FC = () => {
         <div className="flex-1 p-4 space-y-3 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 space-y-4 text-xs font-bold text-slate-800 dark:text-slate-200">
             <div className="flex items-center justify-between"><span>New Message Alerts</span><span className="text-brand-500">Enabled</span></div>
-            <div className="flex items-center justify-between"><span>Visitor notification</span><button onClick={() => handleToggle('visitorNotif')}>{toggles.visitorNotif ? <ToggleRight className="w-6 h-6 text-brand-600" /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}</button></div>
-            <div className="flex items-center justify-between"><span>Chat room notifications</span><button onClick={() => handleToggle('chatNotif')}>{toggles.chatNotif ? <ToggleRight className="w-6 h-6 text-brand-600" /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}</button></div>
+            <div className="flex items-center justify-between">
+              <span>Visitor notification</span>
+              <button onClick={() => handleToggle('visitorNotif')}>
+                {toggles.visitorNotif ? (<ToggleRight className="w-6 h-6 text-brand-600" />) : (<ToggleLeft className="w-6 h-6 text-slate-400" />)}
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Chat room notifications</span>
+              <button onClick={() => handleToggle('chatNotif')}>
+                {toggles.chatNotif ? (<ToggleRight className="w-6 h-6 text-brand-600" />) : (<ToggleLeft className="w-6 h-6 text-slate-400" />)}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -214,7 +259,12 @@ export const ProfileScreen: React.FC = () => {
         </div>
         <div className="flex-1 p-4 space-y-3 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 space-y-4 text-xs font-bold text-slate-800 dark:text-slate-200">
-            <div className="flex items-center justify-between"><span>Receive Pairing Messages</span><button onClick={() => handleToggle('pairingMsg')}>{toggles.pairingMsg ? <ToggleRight className="w-6 h-6 text-brand-600" /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}</button></div>
+            <div className="flex items-center justify-between">
+              <span>Receive Pairing Messages</span>
+              <button onClick={() => handleToggle('pairingMsg')}>
+                {toggles.pairingMsg ? (<ToggleRight className="w-6 h-6 text-brand-600" />) : (<ToggleLeft className="w-6 h-6 text-slate-400" />)}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -231,7 +281,12 @@ export const ProfileScreen: React.FC = () => {
         </div>
         <div className="flex-1 p-4 space-y-3 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 space-y-4 text-xs font-bold text-slate-800 dark:text-slate-200">
-            <div className="flex items-center justify-between"><span>Stop showing me to nearby users</span><button onClick={() => handleToggle('stopNearby')}>{toggles.stopNearby ? <ToggleRight className="w-6 h-6 text-brand-600" /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}</button></div>
+            <div className="flex items-center justify-between">
+              <span>Stop showing me to nearby users</span>
+              <button onClick={() => handleToggle('stopNearby')}>
+                {toggles.stopNearby ? (<ToggleRight className="w-6 h-6 text-brand-600" />) : (<ToggleLeft className="w-6 h-6 text-slate-400" />)}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -270,24 +325,24 @@ export const ProfileScreen: React.FC = () => {
       terms: {
         ar: { title: 'شروط الاستخدام', body: 'أهلاً بك في منصة Jopi. باستخدامك لتطبيقنا فإنك توافق التزماً تاماً على كافة بنود الاستخدام، والتي تشمل الاحترام المتبادل، حظر أي ألفاظ نابية، وعدم إساءة استخدام غرف الدردشة الصوتية أو الرسائل الخاصة.' },
         en: { title: 'Terms of Service', body: 'Welcome to Jopi. By using our app, you fully agree to our terms of service, which include mutual respect, prohibition of abusive language, and avoiding any misuse of voice rooms or private messages.' },
-        tr: { title: 'Kullanım Şartları', body: 'Jopi’ye hoş geldiniz. Uygulamamızı kullanarak karşılıklı saygı, argo dil yasağı ve sesli odaların kötüye kullanılmamasını içeren şartları kabul etmiş olursunuz.' },
+        tr: { title: 'Kullanım Şartları', body: 'Jopi’ye hoş geldiniz. Uygulamamızı kullanarak karşılıklı saygı, argo dil yasağı و sesli odaların kötüye kullanılmamasını içeren şartları kabul etmiş olursunuz.' },
         es: { title: 'Términos de servicio', body: 'Bienvenido a Jopi. Al usar nuestra app, aceptas los términos de servicio, incluyendo respeto mutuo y prohibición de lenguaje abusivo.' },
         id: { title: 'Ketentuan Layanan', body: 'Selamat datang di Jopi. Dengan menggunakan aplikasi kami, Anda sepenuhnya menyetujui ketentuan layanan kami.' },
         fr: { title: 'Conditions d’utilisation', body: 'Bienvenue sur Jopi. En utilisant notre application, vous acceptez pleinement nos conditions d’utilisation.' },
         de: { title: 'Nutzungsbedingungen', body: 'Willkommen bei Jopi. Durch die Nutzung unserer App stimmen Sie den Nutzungsbedingungen voll zu.' },
         ru: { title: 'Условия использования', body: 'Добро пожаловать в Jopi. Используя наше приложение, вы полностью соглашаетесь с условиями использования.' },
-        ur: { title: 'استعمال کی شرائط', body: 'Jopi میں خوش آمدید۔ ہماری ایپ استعمال کرکے آپ تمام شرائط سے اتفاق करते ہیں۔' },
+        ur: { title: 'استعمال کی شرائط', body: 'Jopi میں خوش آمدید۔ ہماری ایپ استعمال کرکے آپ تمام شرائط سے اتفاق کرتے ہیں۔' },
       },
       privacyPolicy: {
         ar: { title: 'سياسة الخصوصية', body: 'نحن في تطبيق Jopi نحرص بصرامة على حماية سرية بياناتك الشخصية ومحادثاتك. لا يتم بيع أو مشاركة أي معلومات خاصة بالمستخدمين مع أي جهات خارجية أبداً.' },
         en: { title: 'Privacy Policy', body: 'At Jopi, we strictly protect the confidentiality of your personal data and chats. User information is never sold or shared with any third party.' },
-        tr: { title: 'Gizlilik Politikası', body: 'Jopi olarak kişisel verilerinizin ve sohbetlerinizin gizliliğini kesinlikle koruyoruz. Bilgileriniz asla üçüncü taraflarla paylaşılmaz.' },
+        tr: { title: 'Gizlilik Politikası', body: 'Jopi olarak kişisel verilerinizin و sohbetlerinizin gizliliğini kesinlikle koruyoruz. Bilgileriniz asla üçüncü taraflarla paylaşılmaz.' },
         es: { title: 'Política de privacidad', body: 'En Jopi protegemos estrictamente la confidencialidad de tus datos personales y chats.' },
-        id: { title: 'Kebijakan Privasi', body: 'Di Jopi, kami secara ketat melindungi kerahasiaan data pribadi dan obrolan Anda.' },
+        id: { title: 'Kebijakan Privasi', body: 'Di Jopi, kami secara ketat melindungi kerahasiaan data pribadi و obrolan Anda.' },
         fr: { title: 'Politique de confidentialité', body: 'Chez Jopi, nous protégeons strictement la confidentialité de vos données personnelles.' },
         de: { title: 'Datenschutzrichtlinie', body: 'Bei Jopi schützen wir die Vertraulichkeit Ihrer persönlichen Daten strengstens.' },
         ru: { title: 'Политика конфиденциальности', body: 'В Jopi мы строго защищаем конфиденциальность ваших личных данных и чатов.' },
-        ur: { title: 'پرائیویسی پالیسی', body: 'Jopi میں ہم آپ کے ذاتی ڈیٹا اور چیٹس کی رازداری کا سختی سے تحفظ करते हैं।' },
+        ur: { title: 'پرائیویسی پالیسی', body: 'Jopi میں ہم آپ کے ذاتی ڈیٹا اور چیٹس کی رازداری کا سختی سے تحفظ کرتے ہیں۔' },
       },
       rules: {
         ar: { title: 'قواعد المنصة', body: '1. يُمنع منعاً باتاً انتحال شخصيات المشرفين أو الإدارة.\n2. يمنع الترويج لأي تطبيقات خارجية أو حسابات تجارية داخل غرف Jopi.\n3. الالتزام بالذوق العام وعدم التعدي على خصوصية الآخرين.' },
@@ -303,7 +358,7 @@ export const ProfileScreen: React.FC = () => {
       childPolicy: {
         ar: { title: 'سياسة حماية الطفل', body: 'تطبيق Jopi مخصص حصرياً للبالغين (+18). نحن نطبق سياسة صارمة جداً (Zero Tolerance) ضد أي استغلال أو إساءة للأطفال، وسيتم حظر أي حساب مخالف نهائياً.' },
         en: { title: 'Child Safeguarding Policy', body: 'Jopi is strictly for adults (+18). We have a zero-tolerance policy against any exploitation or abuse of children, resulting in permanent bans.' },
-        tr: { title: 'Çocuk Koruma Politikası', body: 'Jopi kesinlikle yetişkinler (+18) içindir. Çocukların istismarına karşı sıfır tolerans politikamız vardır.' },
+        tr: { title: 'Çocuk Koruma Politikası', body: 'Jopi kesinlikle yetişkinler (+18) içindir. Çocukların istismarına karşı sıفır tolerans politikamız vardır.' },
         es: { title: 'Política de protección infantil', body: 'Jopi es estrictamente para adultos (+18). Política de tolerancia cero contra el abuso infantil.' },
         id: { title: 'Kebijakan Perlindungan Anak', body: 'Jopi khusus untuk dewasa (+18). Kami memiliki kebijakan nol toleransi terhadap eksploitasi anak.' },
         fr: { title: 'Politique de protection de l’enfance', body: 'Jopi est strictement réservé aux adultes (+18).' },
@@ -314,11 +369,11 @@ export const ProfileScreen: React.FC = () => {
       guidelines: {
         ar: { title: 'إرشادات المجتمع', body: 'مجتمع Jopi يهدف إلى بناء تواصل اجتماعي راقٍ، آمن، وممتع. تفاعل بإيجابية، وساهم في نشر بيئة نظيفة ومرحة داخل الغرف الصوتية وعبر اللحظات.' },
         en: { title: 'Community Guidelines', body: 'Jopi aims to build sophisticated, safe, and fun social communication. Interact positively and help maintain a clean environment in voice rooms.' },
-        tr: { title: 'Topluluk Kuralları', body: 'Jopi, güvenli ve eğlenceli bir sosyal iletişim kurmayı amaçlar. Olumlu etkileşimde bulunun.' },
+        tr: { title: 'Topluluk Kuralları', body: 'Jopi, güvenli و eğlenceli bir sosyal iletişim kurmayı amaçlar. Olumlu etkileşimde bulunun.' },
         es: { title: 'Pautas de la comunidad', body: 'Jopi busca construir una comunicación social sofisticada, segura y divertida.' },
-        id: { title: 'Panduan Komunitas', body: 'Jopi bertujuan membangun komunikasi sosial yang aman dan menyenangkan.' },
+        id: { title: 'Panduan Komunitas', body: 'Jopi bertujuan membangun komunikasi sosial yang aman و menyenangkan.' },
         fr: { title: 'Règlement de la communauté', body: 'Jopi vise à bâtir une communication sociale sophistiquée et sûre.' },
-        de: { title: 'Community-Richtlinien', body: 'Jopi zielt darauf ab, eine sichere und unterhaltsame soziale Kommunikation aufzubauen.' },
+        de: { title: 'Community-Richtlinien', body: 'Jopi zielt darauf ab, eine sichere و unterhaltsame soziale Kommunikation aufzubauen.' },
         ru: { title: 'Правила сообщества', body: 'Jopi стремится создать безопасное и увлекательное общение.' },
         ur: { title: 'کمیونٹی گائیڈ لائنز', body: 'Jopi کا مقصد ایک شاندار اور محفوظ کمیونٹی بنانا ہے۔' },
       },
@@ -423,6 +478,11 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
+  // --- منطق تبديل الصورة بناءً على اللغة ---
+  const topUpImageSrc = (lang === 'ar' || lang === 'ur') 
+    ? "https://cdn.phototourl.com/free/2026-09-12-7cd6c71e-5d36-4b44-9d2e-2765408cca51.jpg"
+    : "https://cdn.phototourl.com/free/2026-09-11-48610cf4-9222-4679-8da9-34d27d0e6772.jpg"; 
+
   return (
     <div className="w-full max-w-md mx-auto px-4 pt-3 pb-24 select-none">
       
@@ -460,13 +520,6 @@ export const ProfileScreen: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-1 mb-3">
-          <span className="px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 dark:text-pink-400 text-[10px] font-bold border border-pink-500/20">💎 29</span>
-          <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-bold border border-purple-500/20">👑 VIP {userVipLevel}</span>
-          <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20">🛡️ SVIP 1</span>
-          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">🏰 UCHIHA Family</span>
-        </div>
-
         <div className="flex items-center justify-center gap-2">
           <h2 className="text-xl font-black text-slate-900 dark:text-white">{user.display_name}</h2>
           {user.age && <span className="text-lg font-light text-slate-500">{user.age}</span>}
@@ -490,7 +543,7 @@ export const ProfileScreen: React.FC = () => {
           )}
         </div>
 
-        {/* زر تعديل الملف الشخصي وزر التوثيق (بتنسيق مرئي سليم 100%) */}
+        {/* زر تعديل الملف الشخصي وزر التوثيق */}
         <div className="flex items-center justify-center gap-2 mt-4">
           <button 
             onClick={() => setEditProfileOpen(true)} 
@@ -518,13 +571,14 @@ export const ProfileScreen: React.FC = () => {
 
       </div>
 
+      {/* محفظة الرصيد وزر شحن الرصيد Top Up Coins */}
       <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm mb-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-md"><Coins className="w-6 h-6" /></div>
             <div><span className="block text-[10px] text-slate-400 font-semibold uppercase">{t('myBalance')}</span><span className="text-base font-black text-slate-900 dark:text-white">{coinBalance} {t('coins')}</span></div>
           </div>
-          <button onClick={() => setShowTopUpModal(true)} className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-sm transition">{t('buyCoins')}</button>
+          <button onClick={() => setShowTopUpModal(true)} className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-sm transition cursor-pointer">Top Up Coins</button>
         </div>
 
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-cyan-500/5 p-3 rounded-2xl border border-cyan-500/20">
@@ -541,24 +595,59 @@ export const ProfileScreen: React.FC = () => {
             <button
               onClick={handleConvertGifts}
               disabled={converting}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white text-[11px] font-bold transition flex items-center gap-1"
+              className="px-2.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
             >
               <ArrowRightLeft className="w-3 h-3" /> تفكيك
             </button>
             <button
               onClick={() => setShowWithdrawModal(true)}
-              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 text-white text-[11px] font-bold shadow-sm transition flex items-center gap-1"
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 text-white text-[11px] font-bold shadow-sm transition flex items-center gap-1 cursor-pointer"
             >
               <Wallet className="w-3 h-3" /> تصريف
             </button>
           </div>
         </div>
+      </div>
 
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('coinsLedger')}</span>
-          <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 text-xs">
-            <span className="text-slate-700 dark:text-slate-300">Top-up package</span>
-            <span className="font-black text-emerald-500">+500 {t('coins')}</span>
+      {/* قسم الألعاب التفاعلية (Games Section) */}
+      <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Gamepad2 className="w-5 h-5 text-amber-500" />
+            <h3 className="text-sm font-black text-slate-900 dark:text-white">الألعاب التفاعلية (Games)</h3>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500">مباشر ⚡</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div 
+            onClick={() => setActiveGameModal('wheel')}
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-purple-900/60 to-indigo-950 border border-purple-500/30 text-white cursor-pointer hover:scale-[1.02] active:scale-98 transition shadow-md relative overflow-hidden group"
+          >
+            <div className="absolute -right-2 -bottom-2 w-16 h-16 bg-purple-500/20 rounded-full blur-xl group-hover:scale-150 transition" />
+            <div className="flex items-center justify-between mb-2">
+              <span className="p-2 rounded-xl bg-purple-500/30 text-amber-300">
+                <Dices className="w-5 h-5" />
+              </span>
+              <span className="text-[10px] font-mono font-black text-amber-300">50x Max</span>
+            </div>
+            <h4 className="text-xs font-black">عجلة الحظ</h4>
+            <p className="text-[10px] text-purple-200/70 mt-0.5">Lucky Spin</p>
+          </div>
+
+          <div 
+            onClick={() => setActiveGameModal('rocket')}
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-cyan-950 to-slate-900 border border-cyan-500/30 text-white cursor-pointer hover:scale-[1.02] active:scale-98 transition shadow-md relative overflow-hidden group"
+          >
+            <div className="absolute -right-2 -bottom-2 w-16 h-16 bg-cyan-500/20 rounded-full blur-xl group-hover:scale-150 transition" />
+            <div className="flex items-center justify-between mb-2">
+              <span className="p-2 rounded-xl bg-cyan-500/30 text-cyan-300">
+                <Rocket className="w-5 h-5" />
+              </span>
+              <span className="text-[10px] font-mono font-black text-emerald-400">Crash</span>
+            </div>
+            <h4 className="text-xs font-black">صاروخ الحظ</h4>
+            <p className="text-[10px] text-cyan-200/70 mt-0.5">Rocket Crash</p>
           </div>
         </div>
       </div>
@@ -596,30 +685,184 @@ export const ProfileScreen: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2.5 mb-4">
-        <div onClick={() => setActiveTab('matches')} className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center shadow-sm cursor-pointer"><Heart className="w-4 h-4 text-rose-500 fill-rose-500 mx-auto mb-1" /><div className="text-base font-black text-slate-900 dark:text-white">{matchesCount}</div><span className="text-[10px] text-slate-400 font-semibold">{t('navMatches')}</span></div>
-        <div onClick={() => setActiveTab('messages')} className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center shadow-sm cursor-pointer"><MessageCircle className="w-4 h-4 text-brand-500 fill-brand-500 mx-auto mb-1" /><div className="text-base font-black text-slate-900 dark:text-white">{chatsCount}</div><span className="text-[10px] text-slate-400 font-semibold">{t('navMessages')}</span></div>
-        <div onClick={() => setShowTopUpModal(true)} className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center shadow-sm cursor-pointer"><Coins className="w-4 h-4 text-amber-500 fill-amber-500 mx-auto mb-1" /><div className="text-base font-black text-slate-900 dark:text-white">{coinBalance}</div><span className="text-[10px] text-slate-400 font-semibold">{t('navWallet')}</span></div>
-      </div>
-
-      {/* قسم نبذة عني مع زر تعديل مباشر */}
-      <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">{t('aboutMe')}</h3>
-          <button 
-            onClick={() => setEditProfileOpen(true)}
-            className="text-[11px] font-bold text-brand-600 hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Edit3 className="w-3.5 h-3.5" /> تعديل
-          </button>
-        </div>
-        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{user.bio || 'No bio added yet.'}</p>
-      </div>
-
       <div className="flex flex-col gap-2">
-        <button onClick={handleResetData} className="w-full py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-2"><RefreshCw className="w-4 h-4" /> <span>Reset Default Data</span></button>
-        <button onClick={logout} className="w-full py-3 px-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center justify-center gap-2"><LogOut className="w-4 h-4" /> <span>{t('logout')}</span></button>
+        <button onClick={handleResetData} className="w-full py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"><RefreshCw className="w-4 h-4" /> <span>Reset Default Data</span></button>
+        <button onClick={logout} className="w-full py-3 px-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"><LogOut className="w-4 h-4" /> <span>{t('logout')}</span></button>
       </div>
+
+      {/* --- نافذة شحن العملات الفاخرة بطريقة الأزرار الشفافة --- */}
+      <AnimatePresence>
+        {showTopUpModal && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm select-none p-4"
+            onClick={() => setShowTopUpModal(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 30 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.9, opacity: 0, y: 30 }} 
+              className="relative w-full max-w-[380px] rounded-3xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* زر الإغلاق */}
+              <button 
+                onClick={() => setShowTopUpModal(false)} 
+                className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/80 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* الصورة الأصلية بالكامل */}
+              <img 
+                src={topUpImageSrc} 
+                alt="Jopi Topup" 
+                className="w-full h-auto block pointer-events-none" 
+              />
+
+              {/* طبقة الأزرار الشفافة التفاعلية المتوافقة تماماً - مع إضافة dir=ltr لإجبار المتصفح على عدم عكس الترتيب */}
+              <div dir="ltr" style={{
+                position: 'absolute',
+                top: '23%',
+                left: '5.5%',
+                width: '89%',
+                height: '61.5%',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gridTemplateRows: 'repeat(3, 1fr)',
+                columnGap: '3%',
+                rowGap: '3%'
+              }}>
+                {CAT_COIN_PACKAGES.map((pkg) => {
+                  const isSelected = selectedPkg.id === pkg.id;
+                  
+                  return (
+                    <div 
+                      key={pkg.id}
+                      onClick={() => setSelectedPkg(pkg)}
+                      className={`relative w-full h-full cursor-pointer rounded-[14px] transition-all flex items-center justify-center ${
+                        isSelected ? 'bg-white/10 ring-1 ring-white/50 shadow-[inset_0_0_20px_rgba(255,165,0,0.2)]' : 'hover:bg-white/10'
+                      }`}
+                    >
+                      <AnimatePresence>
+                        {isSelected && (
+                          <motion.div
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            className="absolute top-[38%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 bg-gradient-to-br from-[#ffb82e] to-[#f7931a] rounded-full border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(247,147,26,0.8)] pointer-events-none"
+                          >
+                            <Check className="w-4 h-4 text-white drop-shadow-md" strokeWidth={4} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* زر الشراء السفلي */}
+              {selectedPkg && (
+                <div style={{ position: 'absolute', bottom: '4%', left: '5%', width: '90%', zIndex: 20 }}>
+                  <button 
+                    onClick={handleConfirmPurchase}
+                    disabled={purchasing}
+                    className="w-full py-3.5 rounded-[18px] bg-gradient-to-r from-[#ffb82e] via-[#f7931a] to-[#ffb82e] text-[#2d1b0d] font-black text-[13px] shadow-xl active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    <span>{purchasing ? (lang === 'ar' ? 'جاري المعالجة...' : 'Processing...') : (lang === 'ar' ? `شحن ${selectedPkg.coins.toLocaleString()} مقابل ${selectedPkg.price}$` : `Top up ${selectedPkg.coins.toLocaleString()} for $${selectedPkg.price}`)}</span>
+                  </button>
+                </div>
+              )}
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeGameModal === 'wheel' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="w-full max-w-sm bg-gradient-to-b from-slate-900 via-purple-950 to-slate-950 border border-purple-500/30 rounded-3xl p-6 shadow-2xl text-white text-center relative">
+              <button onClick={() => setActiveGameModal(null)} className="absolute top-4 end-4 p-1.5 rounded-full bg-white/10 text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+              <h3 className="text-base font-black text-amber-400 mb-1 flex items-center justify-center gap-1.5"><Dices className="w-5 h-5" /> عجلة الحظ</h3>
+              <p className="text-xs text-purple-300/70 mb-4">جرب حظك الآن واربح مضاعفات الكوينز!</p>
+              
+              <div className="relative w-48 h-48 mx-auto my-3 flex items-center justify-center">
+                <motion.div 
+                  animate={{ rotate: wheelRotation }}
+                  transition={{ duration: 3.5, ease: [0.15, 0.9, 0.2, 1] }}
+                  className="w-full h-full rounded-full border-4 border-amber-400 shadow-xl"
+                  style={{
+                    background: `conic-gradient(#3b82f6 0deg 45deg, #10b981 45deg 90deg, #f59e0b 90deg 135deg, #8b5cf6 135deg 180deg, #ec4899 180deg 225deg, #e11d48 225deg 270deg, #fbbf24 270deg 315deg, #64748b 315deg 360deg)`
+                  }}
+                />
+                <div className="absolute w-10 h-10 rounded-full bg-slate-900 border-2 border-amber-400 flex items-center justify-center font-black text-xs text-amber-400">GO</div>
+              </div>
+
+              <button 
+                disabled={isSpinning}
+                onClick={() => {
+                  if (isSpinning) return;
+                  setIsSpinning(true);
+                  const randRot = wheelRotation + 1800 + Math.floor(Math.random() * 360);
+                  setWheelRotation(randRot);
+                  setTimeout(() => {
+                    setIsSpinning(false);
+                    showToast('تمت الجولة! حظاً موفقاً دائماً 🎁', 'success');
+                  }, 3600);
+                }}
+                className="w-full mt-4 py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 text-white font-black text-xs shadow-lg active:scale-98 disabled:opacity-50 cursor-pointer"
+              >
+                {isSpinning ? 'جارٍ الدوران...' : 'تدوير الآن (100 عملة)'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeGameModal === 'rocket' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="w-full max-w-sm bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 border border-cyan-500/30 rounded-3xl p-6 shadow-2xl text-white text-center relative">
+              <button onClick={() => setActiveGameModal(null)} className="absolute top-4 end-4 p-1.5 rounded-full bg-white/10 text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+              <h3 className="text-base font-black text-cyan-400 mb-1 flex items-center justify-center gap-1.5"><Rocket className="w-5 h-5" /> صاروخ الحظ</h3>
+              <p className="text-xs text-cyan-300/70 mb-3">اسحب قبل الانفجار!</p>
+
+              <div className="h-36 bg-slate-950/80 rounded-2xl border border-cyan-500/20 flex flex-col items-center justify-center relative overflow-hidden my-2">
+                <span className={`text-4xl font-black font-mono ${rocketState === 'crashed' ? 'text-rose-500 animate-pulse' : 'text-amber-400'}`}>
+                  {rocketMultiplier.toFixed(2)}x
+                </span>
+                {rocketState === 'crashed' && <span className="text-xs text-rose-400 mt-1">انفجر الصاروخ 💥</span>}
+              </div>
+
+              <button 
+                onClick={() => {
+                  if (rocketState === 'flying') {
+                    setRocketState('idle');
+                    showToast(`تم السحب بنجاح على مضاعف ${rocketMultiplier.toFixed(2)}x! 🎉`, 'success');
+                  } else {
+                    setRocketState('flying');
+                    setRocketMultiplier(1.00);
+                    const timer = setInterval(() => {
+                      setRocketMultiplier(prev => {
+                        if (prev >= 3.2) {
+                          clearInterval(timer);
+                          setRocketState('crashed');
+                          return prev;
+                        }
+                        return Number((prev + 0.08).toFixed(2));
+                      });
+                    }, 100);
+                  }
+                }}
+                className={`w-full mt-3 py-3 rounded-2xl font-black text-xs shadow-lg cursor-pointer ${rocketState === 'flying' ? 'bg-emerald-500 text-slate-950 animate-pulse' : 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white'}`}
+              >
+                {rocketState === 'flying' ? 'سحب نقدي الآن!' : 'إطلاق الصاروخ (100 عملة)'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showVisitorsModal && isVipUnlocked && (
@@ -627,7 +870,7 @@ export const ProfileScreen: React.FC = () => {
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                 <h3 className="text-sm font-black flex items-center gap-1.5 text-slate-900 dark:text-white"><Eye className="w-4 h-4 text-brand-500" /> {t('visitors')}</h3>
-                <button onClick={() => setShowVisitorsModal(false)} className="p-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400"><X className="w-4 h-4" /></button>
+                <button onClick={() => setShowVisitorsModal(false)} className="p-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-pointer"><X className="w-4 h-4" /></button>
               </div>
               <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
                 {visitorsList.map(v => (
@@ -643,33 +886,6 @@ export const ProfileScreen: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showTopUpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-sm font-black flex items-center gap-1.5 text-slate-900 dark:text-white"><Coins className="w-4 h-4 text-amber-500 fill-amber-500" /> {t('buyCoins')}</h3>
-                <button onClick={() => setShowTopUpModal(false)} className="p-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400"><X className="w-4 h-4" /></button>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1">
-                {MOCK_COIN_PACKAGES.map((pkg) => (
-                  <button key={pkg.id} onClick={() => setSelectedPkg(pkg)} className={`p-3 rounded-2xl text-start border-2 transition ${selectedPkg?.id === pkg.id ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'}`}>
-                    <div className="text-sm font-black text-slate-900 dark:text-white">{pkg.coins} {t('coins')}</div>
-                    {pkg.bonus_coins > 0 && <div className="text-[10px] text-emerald-500 font-bold">+{pkg.bonus_coins} Free</div>}
-                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-2">${pkg.price_usd} USD</div>
-                  </button>
-                ))}
-              </div>
-              {selectedPkg && (
-                <button onClick={handleConfirmPurchase} disabled={purchasing} className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-black shadow-lg flex items-center justify-center gap-2">
-                  <CreditCard className="w-4 h-4" /> <span>{purchasing ? 'Processing...' : `Pay ($${selectedPkg.price_usd})`}</span>
-                </button>
-              )}
             </motion.div>
           </div>
         )}

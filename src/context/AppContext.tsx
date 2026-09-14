@@ -13,6 +13,7 @@ import { WalletService } from '../services/walletService';
 import { NotificationService } from '../services/notificationService';
 import { socketService } from '../services/socketService';
 import { ChatService } from '../services/chatService';
+import { supabase } from '../services/supabaseClient'; 
 
 export type NavTab = 'discover' | 'party' | 'messages' | 'matches' | 'wallet' | 'moments' | 'profile' | 'admin';
 
@@ -56,6 +57,7 @@ interface AppContextType {
   
   callSession: CallSession | null;
   startCall: (targetUser: User, type: CallType) => void;
+  acceptCall: () => void;
   endActiveCall: () => void;
   toggleCallMute: () => void;
   toggleCallSpeaker: () => void;
@@ -78,6 +80,9 @@ interface AppContextType {
   toasts: ToastMessage[];
   showToast: (text: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
   removeToast: (id: string) => void;
+
+  shouldOpenTopUp: boolean;
+  setShouldOpenTopUp: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -96,6 +101,7 @@ const DEFAULT_FILTERS: FilterPreferences = {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<NavTab>('discover');
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [shouldOpenTopUp, setShouldOpenTopUp] = useState<boolean>(false);
 
   const [activeRoom, setActiveRoom] = useState<VoiceRoom | null>(null);
   const [isRoomMinimized, setIsRoomMinimized] = useState<boolean>(false);
@@ -187,38 +193,159 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const removeToast = (id: string) => setToasts(prev => prev.filter(t => t.id !== id));
 
-  const startCall = (targetUser: User, type: CallType) => {
-    const session = CallService.startCall(targetUser, type);
-    setCallSession(session);
-    const currentUser = StorageService.get<User | null>(STORAGE_KEYS.CURRENT_USER, null);
-    if (currentUser) {
-      socketService.initiateCall(targetUser.id, currentUser, type);
+  // --- عداد وقت المكالمة ---
+  useEffect(() => {
+    let timerInterval: ReturnType<typeof setInterval>;
+    if (callSession?.status === 'connected') {
+      timerInterval = setInterval(() => {
+        setCallSession(prev => {
+          if (!prev) return null;
+          return { ...prev, duration_seconds: prev.duration_seconds + 1 };
+        });
+      }, 1000);
     }
+    return () => {
+      if (timerInterval) clearInterval(timerInterval);
+    };
+  }, [callSession?.status, callSession?.id]);
+
+  // --- تبادل حزم WebRTC لفتح الصوت والفيديو (مع إصلاح الـ Race Condition بنظام Ping-Pong) ---
+  useEffect(() => {
+    if (!callSession || callSession.status !== 'connected') return;
+
+    const channelName = `webrtc_signal_${callSession.caller.id}_${callSession.receiver.id}`;
+    const webrtcChannel = supabase.channel(channelName);
+
+    CallService.onIceCandidate = (candidate) => {
+      webrtcChannel.send({ type: 'broadcast', event: 'ice_candidate', payload: { candidate } });
+    };
+
+    // 1. المستقبل يتلقى سؤال المتصل ويرد عليه بتأكيد أنه جاهز تماماً
+    webrtcChannel.on('broadcast', { event: 'caller_ping' }, () => {
+      const isCaller = (callSession as any).isOutgoing;
+      if (!isCaller) {
+        webrtcChannel.send({ type: 'broadcast', event: 'receiver_ready', payload: {} });
+      }
+    });
+
+    // 2. المتصل يتلقى التأكيد فيبدأ فوراً بإرسال حزم الاتصال الحقيقية (Offer)
+    webrtcChannel.on('broadcast', { event: 'receiver_ready' }, async () => {
+      const isCaller = (callSession as any).isOutgoing;
+      if (isCaller) {
+        const offer = await CallService.generateOffer();
+        if (offer) {
+          webrtcChannel.send({ type: 'broadcast', event: 'offer', payload: { offer } });
+        }
+      }
+    });
+
+    // 3. المستقبل يستقبل حزم الاتصال ويرد عليها
+    webrtcChannel.on('broadcast', { event: 'offer' }, async ({ payload }) => {
+      const isCaller = (callSession as any).isOutgoing;
+      if (!isCaller) {
+        const answer = await CallService.handleOfferAndCreateAnswer(payload.offer);
+        if (answer) {
+          webrtcChannel.send({ type: 'broadcast', event: 'answer', payload: { answer } });
+        }
+      }
+    });
+
+    // 4. المتصل يتلقى الرد ويتم الاتصال
+    webrtcChannel.on('broadcast', { event: 'answer' }, async ({ payload }) => {
+      await CallService.handleAnswer(payload.answer);
+    });
+
+    webrtcChannel.on('broadcast', { event: 'ice_candidate' }, async ({ payload }) => {
+      await CallService.handleIceCandidate(payload.candidate);
+    });
+
+    webrtcChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        const isCaller = (callSession as any).isOutgoing;
+        if (!isCaller) {
+          webrtcChannel.send({ type: 'broadcast', event: 'receiver_ready', payload: {} });
+        } else {
+          webrtcChannel.send({ type: 'broadcast', event: 'caller_ping', payload: {} });
+        }
+      }
+    });
+
+    return () => {
+      CallService.onIceCandidate = null;
+      supabase.removeChannel(webrtcChannel);
+    };
+  }, [callSession?.status, callSession?.id]);
+
+  const startCall = async (targetUser: User, type: CallType) => {
+    const currentUser = StorageService.get<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+    if (!currentUser) return;
+
+    const session: CallSession & { isOutgoing?: boolean } = {
+      id: `call-${Date.now()}`,
+      caller: currentUser,
+      receiver: targetUser,
+      call_type: type,
+      status: 'ringing',
+      duration_seconds: 0,
+      is_muted: false,
+      is_speaker_on: true,
+      is_video_enabled: type === 'video',
+      started_at: new Date().toISOString(),
+      isOutgoing: true,
+    };
+
+    setCallSession(session as CallSession);
+
+    await CallService.initMediaStream(type);
+    CallService.startCall(targetUser, type);
+    socketService.initiateCall(targetUser.id, currentUser, type);
+  };
+
+  const acceptCall = () => {
+    setCallSession(prev => {
+      if (!prev) return null;
+
+      CallService.initMediaStream(prev.call_type).then(() => {
+        setCallSession(current => {
+          if (!current) return null;
+          const currentUser = StorageService.get<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+          if (currentUser) {
+            (socketService as any).acceptCall?.(current.caller.id, currentUser);
+          }
+          return { ...current, status: 'connected' };
+        });
+      });
+
+      return prev;
+    });
   };
 
   const endActiveCall = () => {
-    if (callSession) {
-      socketService.endCall(callSession.receiver.id);
-      CallService.endCall(callSession);
-      setCallSession(null);
+    setCallSession(prev => {
+      if (!prev) return null;
+      const currentUser = StorageService.get<User | null>(STORAGE_KEYS.CURRENT_USER, null);
+      const targetId = prev.caller.id === currentUser?.id ? prev.receiver.id : prev.caller.id;
+      socketService.endCall(targetId);
+      CallService.endCall(prev);
       showToast('المكالمة انتهت', 'info');
-    }
+      return null;
+    });
   };
 
   const toggleCallMute = () => {
-    if (callSession) setCallSession(CallService.toggleMute(callSession));
+    setCallSession(prev => prev ? CallService.toggleMute(prev) : null);
   };
 
   const toggleCallSpeaker = () => {
-    if (callSession) setCallSession(CallService.toggleSpeaker(callSession));
+    setCallSession(prev => prev ? CallService.toggleSpeaker(prev) : null);
   };
 
   const toggleCallVideo = () => {
-    if (callSession) setCallSession(CallService.toggleVideo(callSession));
+    setCallSession(prev => prev ? CallService.toggleVideo(prev) : null);
   };
 
   const switchCallCamera = () => {
-    if (callSession) setCallSession(CallService.switchCamera(callSession));
+    setCallSession(prev => prev ? CallService.switchCamera(prev) : null);
   };
 
   useEffect(() => {
@@ -248,10 +375,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     socketService.onIncomingCall(({ caller, callType }) => {
-      const incomingSession: CallSession = {
+      if (caller.id === currentUser.id) return;
+
+      const incomingSession: CallSession & { isOutgoing?: boolean } = {
         id: `call-${Date.now()}`,
-        caller,
-        receiver: currentUser,
+        caller, 
+        receiver: currentUser, 
         call_type: callType,
         status: 'ringing',
         duration_seconds: 0,
@@ -259,14 +388,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         is_speaker_on: true,
         is_video_enabled: callType === 'video',
         started_at: new Date().toISOString(),
+        isOutgoing: false, 
       };
-      setCallSession(incomingSession);
+      setCallSession(incomingSession as CallSession);
       showToast(`📞 مكالمة واردة من ${caller.display_name}...`, 'info');
     });
 
     socketService.onCallTerminated(() => {
+      CallService.endCall();
       setCallSession(null);
       showToast('تم إنهاء المكالمة من الطرف الآخر', 'info');
+    });
+
+    socketService.onCallConnected(() => {
+       setCallSession(prev => prev ? { ...prev, status: 'connected' } : null);
     });
 
     return () => {
@@ -306,6 +441,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setReportModal,
       callSession,
       startCall,
+      acceptCall,
       endActiveCall,
       toggleCallMute,
       toggleCallSpeaker,
@@ -323,6 +459,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       toasts,
       showToast,
       removeToast,
+      shouldOpenTopUp,
+      setShouldOpenTopUp,
     }}>
       {children}
     </AppContext.Provider>

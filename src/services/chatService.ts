@@ -1,5 +1,5 @@
 // ============================================================================
-// jopi Chat & Messaging Service (Production Supabase + Realtime + Auto-Greet)
+// jopi Chat & Messaging Service (Production Supabase + Realtime Instant Sync)
 // ============================================================================
 
 import { Message, Conversation, MessageType, Gift, User } from '../types';
@@ -43,8 +43,33 @@ export class ChatService {
     return conversations.filter(c => !blockedIds.has(c.partner?.id));
   }
 
-  static getMessages(conversationId: string): Message[] {
+  // دالة جلب الرسائل مع مزامنة فورية من السيرفر
+  static async getMessages(conversationId: string): Promise<Message[]> {
     StorageService.initializeDefaults();
+    
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        const localMessages = StorageService.get<Message[]>(STORAGE_KEYS.MESSAGES, []);
+        const mergedMap = new Map();
+        
+        localMessages.forEach(m => mergedMap.set(m.id, m));
+        data.forEach(m => mergedMap.set(m.id, m as Message));
+        
+        const mergedMessages = Array.from(mergedMap.values());
+        StorageService.set(STORAGE_KEYS.MESSAGES, mergedMessages);
+
+        return mergedMessages.filter(m => m.conversation_id === conversationId);
+      }
+    } catch (e) {
+      console.error('Error fetching messages from Supabase:', e);
+    }
+
     const messages = StorageService.get<Message[]>(STORAGE_KEYS.MESSAGES, []);
     return messages.filter(m => m.conversation_id === conversationId);
   }
@@ -62,7 +87,7 @@ export class ChatService {
     const messages = StorageService.get<Message[]>(STORAGE_KEYS.MESSAGES, []);
 
     const newMessage: Message = {
-      id: `msg-${Date.now()}`,
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       conversation_id: params.conversationId,
       sender_id: currentUser?.id || 'guest',
       receiver_id: params.receiverId,
@@ -77,6 +102,7 @@ export class ChatService {
       created_at: new Date().toISOString(),
     };
 
+    // حفظ محلياً لتحديث الواجهة فوراً
     messages.push(newMessage);
     StorageService.set(STORAGE_KEYS.MESSAGES, messages);
 
@@ -88,27 +114,30 @@ export class ChatService {
       StorageService.set(STORAGE_KEYS.CONVERSATIONS, conversations);
     }
 
-    if (!currentUser || !currentUser.id || currentUser.id.startsWith('user-') || currentUser.id.includes('current-user')) {
-      socketService.sendMessage(newMessage);
-      return newMessage;
-    }
+    // إرسال البيانات دائماً إلى جدول Supabase لضمان وصولها إلى الطرف الآخر
+    try {
+      const { error } = await supabase.from('messages').insert({
+        id: newMessage.id,
+        sender_id: currentUser?.id || 'guest',
+        receiver_id: params.receiverId,
+        text: params.text || (params.giftData ? `Sent gift: ${params.giftData.name}` : ''),
+        media_url: params.mediaUrl || null,
+        media_duration: params.mediaDuration || null,
+        message_type: params.messageType || 'text',
+        conversation_id: params.conversationId,
+        created_at: newMessage.created_at,
+        is_read: false,
+        is_delivered: true
+      });
 
-    const { error } = await supabase.from('messages').insert({
-      id: newMessage.id,
-      sender_id: currentUser.id,
-      receiver_id: params.receiverId,
-      text: params.text || (params.giftData ? `Sent gift: ${params.giftData.name}` : ''),
-      media_url: params.mediaUrl || null,
-      message_type: params.messageType || 'text',
-      conversation_id: params.conversationId
-    });
-
-    if (error) {
-      console.error('Error syncing message to Supabase:', error);
+      if (error) {
+        console.error('Error syncing message to Supabase:', error);
+      }
+    } catch (err) {
+      console.error('Failed to insert message to Supabase:', err);
     }
 
     socketService.sendMessage(newMessage);
-
     return newMessage;
   }
 
@@ -167,22 +196,31 @@ export class ChatService {
     }
   }
 
+  // تم اصلاح تداخل الرسائل عبر الفلترة الدقيقة برقم المحادثة حصراً داخل اشتراك الـ Realtime
   static subscribeToMessages(conversationId: string, onNewMessage: (msg: Message) => void) {
+    const channelName = `realtime-chat-sync-${conversationId}`;
+    
     return supabase
-      .channel(`public:messages:conversation_id=eq.${conversationId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
+          filter: `conversation_id=eq.${conversationId}`, // الفلترة المباشرة تمنع تداخل رسائل المحادثات أو الغرف الأخرى
         },
         (payload) => {
-          onNewMessage(payload.new as Message);
+          const incomingMsg = payload.new as Message;
+          if (incomingMsg && incomingMsg.conversation_id === conversationId) {
+            this.receiveIncomingMessage(incomingMsg);
+            onNewMessage(incomingMsg);
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[Realtime] Subscription status for ${conversationId}:`, status);
+      });
   }
 
   static startAutoGreetingScheduler(onNewMessageReceived?: (msg: Message) => void): () => void {

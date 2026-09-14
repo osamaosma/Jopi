@@ -1,5 +1,5 @@
 // ============================================================================
-// jopi Main Application Root Component (Direct Integration & Friends Tab Native)
+// jopi Main Application Root Component (Full & Safe Version - Automated Messaging Integrated)
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -11,6 +11,7 @@ import { AppProvider, useApp } from './context/AppContext';
 // Services
 import { socketService } from './services/socketService';
 import { supabase } from './services/supabaseClient';
+import { AutomatedMessageService } from './services/AutomatedMessageService';
 
 // Common Components
 import { Header } from './components/common/Header';
@@ -31,7 +32,6 @@ import { ChatScreen } from './components/chat/ChatScreen';
 import { MomentsScreen } from './components/moments/MomentsScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { AdminDashboard } from './components/admin/AdminDashboard';
-import { FriendsTab } from './components/chat/FriendsTab'; // شاشة الأصدقاء المستقلة
 
 // Party Rooms Components
 import { LiveRoomModal, FloatingRoomPlayer } from './components/party/LiveRoomModal';
@@ -49,7 +49,7 @@ import { ReportModal } from './components/settings/BlockedUsersModal';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isOnboarded, user } = useAuth();
-  const { activeTab, activeConversation, setActiveConversation, setActiveTab } = useApp();
+  const { activeTab, activeConversation, setActiveTab } = useApp();
   const [showSplash, setShowSplash] = useState(false);
   const [authMode, setAuthMode] = useState<'selection' | 'phone'>('selection');
 
@@ -67,6 +67,13 @@ const MainAppContent: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       socketService.init(user);
+
+      AutomatedMessageService.sendDailyRandomMessage();
+      const autoMsgInterval = setInterval(() => {
+        AutomatedMessageService.sendDailyRandomMessage();
+      }, 1000 * 60 * 60);
+
+      return () => clearInterval(autoMsgInterval);
     }
   }, [isAuthenticated, user]);
 
@@ -117,29 +124,12 @@ const MainAppContent: React.FC = () => {
         {activeTab === 'discover' && <DiscoverScreen />}
         {activeTab === 'party' && <PartyScreen />}
         
-        {/* إذا كان التبويب messages وactiveConversation موجود تفتح شاشة الدردشة، وإلا تعرض شاشة المطابقات */}
-        {activeTab === 'messages' && (
-          activeConversation ? <ChatScreen /> : <MatchesScreen />
-        )}
+        {/* شاشة الدردشة */}
+        {activeTab === 'messages' && <ChatScreen />}
 
-        {/* الدمج المباشر لشاشة الأصدقاء كشاشة رئيسية مستقلة */}
-        {activeTab === 'friends' && (
-          <FriendsTab 
-            currentUserId={user?.id || ''} 
-            onStartChat={(friend) => {
-              setActiveConversation({
-                id: `conv_${friend.id}`,
-                partner: friend,
-                unread_count: 0,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              });
-              setActiveTab('messages'); // الانتقال التلقائي للرسائل عند بدء المحادثة
-            }} 
-          />
-        )}
+        {/* قسم اللحظات */}
+        {activeTab === 'moments' && <MomentsScreen />}
 
-        {activeTab === 'wallet' && <MomentsScreen />}
         {activeTab === 'profile' && <ProfileScreen />}
         {activeTab === 'admin' && <AdminDashboard />}
       </main>

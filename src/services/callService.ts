@@ -25,6 +25,16 @@ export class CallService {
   private static peerConnection: RTCPeerConnection | null = null;
   private static activeSession: CallSession | null = null;
   private static currentFacingMode: 'user' | 'environment' = 'user';
+  
+  private static remoteAudioElement: HTMLAudioElement | null = null;
+
+  static onRemoteStream: ((stream: MediaStream) => void) | null = null;
+  static onIceCandidate: ((candidate: RTCIceCandidate) => void) | null = null;
+
+  // جلب مسار الكاميرا/المايك المحلي لعرضه في الواجهة
+  static getLocalStream(): MediaStream | null {
+    return this.localStream;
+  }
 
   static startCall(targetUser: User, type: CallType): CallSession {
     const currentUser = UserService.getCurrentUser();
@@ -60,7 +70,7 @@ export class CallService {
         return this.localStream;
       }
     } catch {
-      // الصمود عند غياب الكاميرا أو رفض الإذن
+      console.warn('تم رفض إذن الوصول للكاميرا أو الميكروفون أو أنهما غير متوفرين');
     }
     return null;
   }
@@ -72,6 +82,7 @@ export class CallService {
 
     this.peerConnection = new RTCPeerConnection(RTC_ICE_SERVERS);
 
+    // إضافة المسارات المحلية (الكاميرا والمايك) للاتصال
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => {
         if (this.peerConnection && this.localStream) {
@@ -80,7 +91,74 @@ export class CallService {
       });
     }
 
+    // استخراج حزم ICE وإرسالها
+    this.peerConnection.onicecandidate = (event) => {
+      if (event.candidate && this.onIceCandidate) {
+        this.onIceCandidate(event.candidate);
+      }
+    };
+
+    // استقبال مسارات الطرف الآخر وربطها برمجياً بعنصر الواجهة الفعلي لحل مشكلة عدم خروج الصوت
+    this.peerConnection.ontrack = (event) => {
+      if (event.streams && event.streams[0]) {
+        const stream = event.streams[0];
+        
+        const mediaElement = document.getElementById('remote-media-element') as HTMLMediaElement;
+        if (mediaElement) {
+          mediaElement.srcObject = stream;
+          mediaElement.play().catch(e => console.warn('Autoplay blocked by browser:', e));
+        } else {
+          if (!this.remoteAudioElement) {
+            this.remoteAudioElement = new Audio();
+            this.remoteAudioElement.autoplay = true;
+          }
+          this.remoteAudioElement.srcObject = stream;
+        }
+
+        if (this.onRemoteStream) {
+          this.onRemoteStream(stream);
+        }
+      }
+    };
+
     return this.peerConnection;
+  }
+
+  static async generateOffer(): Promise<RTCSessionDescriptionInit | null> {
+    if (!this.peerConnection) this.createPeerConnection();
+    try {
+      const offer = await this.peerConnection!.createOffer();
+      await this.peerConnection!.setLocalDescription(offer);
+      return offer;
+    } catch (e) {
+      console.error("Offer creation error", e);
+      return null;
+    }
+  }
+
+  static async handleOfferAndCreateAnswer(offer: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit | null> {
+    if (!this.peerConnection) this.createPeerConnection();
+    try {
+      await this.peerConnection!.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await this.peerConnection!.createAnswer();
+      await this.peerConnection!.setLocalDescription(answer);
+      return answer;
+    } catch (e) {
+      console.error("Answer creation error", e);
+      return null;
+    }
+  }
+
+  static async handleAnswer(answer: RTCSessionDescriptionInit): Promise<void> {
+    if (this.peerConnection) {
+      await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    }
+  }
+
+  static async handleIceCandidate(candidate: RTCIceCandidateInit): Promise<void> {
+    if (this.peerConnection) {
+      await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    }
   }
 
   static endCall(session?: CallSession | null): void {
@@ -92,6 +170,18 @@ export class CallService {
     if (this.peerConnection) {
       this.peerConnection.close();
       this.peerConnection = null;
+    }
+
+    const mediaElement = document.getElementById('remote-media-element') as HTMLMediaElement;
+    if (mediaElement) {
+      mediaElement.pause();
+      mediaElement.srcObject = null;
+    }
+
+    if (this.remoteAudioElement) {
+      this.remoteAudioElement.pause();
+      this.remoteAudioElement.srcObject = null;
+      this.remoteAudioElement = null;
     }
 
     this.activeSession = null;

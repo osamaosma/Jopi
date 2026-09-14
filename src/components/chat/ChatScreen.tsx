@@ -1,5 +1,5 @@
 // ============================================================================
-// jopi Private Chat Screen & Friends Hub (SUGO Style Integrated)
+// jopi Private Chat Screen & Original UI Restored (SUGO Style Integrated - Realtime Fixed)
 // ============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -8,7 +8,7 @@ import { FriendsTab } from './FriendsTab';
 import { 
   ArrowLeft, ArrowRight, Phone, Video, MoreVertical, 
   Send, Mic, Gift as GiftIcon, Image as ImageIcon, 
-  Smile, CheckCheck, Play, Pause, ShieldAlert, Ban, UserPlus, Search, Menu
+  Smile, CheckCheck, Play, Pause, ShieldAlert, Ban, UserPlus, Search, Menu, Bell, Users
 } from 'lucide-react';
 import { Message, Conversation, User } from '../../types';
 import { ChatService } from '../../services/chatService';
@@ -16,6 +16,7 @@ import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
 import { Avatar } from '../common/Avatar';
+import { supabase } from '../../services/supabaseClient';
 
 const QUICK_EMOJIS = ['❤️', '😍', '🔥', '☕', '✨', '🌹', '👏', '😂', '🎉', '🥰'];
 
@@ -27,14 +28,17 @@ export const ChatScreen: React.FC = () => {
     setGiftModal, 
     setReportModal, 
     setViewingUser,
-    showToast 
+    showToast,
+    setNotificationsOpen,
+    unreadNotifsCount
   } = useApp();
   const { user: currentUser } = useAuth();
   const { t, isRTL, lang } = useLang();
 
-  // الحالة للتبديل بين المحادثات والأصدقاء في الأعلى
   const [activeTab, setActiveTab] = useState<'chats' | 'friends'>('chats');
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -47,26 +51,68 @@ export const ChatScreen: React.FC = () => {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); // مرجع مخفي لفتح معرض الصور
   const partner = activeConversation?.partner;
 
   useEffect(() => {
-    if (!activeConversation) return;
+    setConversations(ChatService.getConversations());
+  }, []);
 
-    const msgs = ChatService.getMessages(activeConversation.id);
-    setMessages(msgs);
-    ChatService.markAsRead(activeConversation.id);
+  // تفعيل الاتصال اللحظي الفوري (Realtime) وإصلاح مشكلة وصول الرسائل
+useEffect(() => {
+    if (!activeConversation || !currentUser) return;
 
-    const subscription = ChatService.subscribeToMessages(activeConversation.id, (newMsg) => {
-      setMessages(prev => {
-        if (prev.some(m => m.id === newMsg.id)) return prev;
-        return [...prev, newMsg];
-      });
-    });
+    const loadMessages = async () => {
+      const msgs = await ChatService.getMessages(activeConversation.id);
+      setMessages(msgs);
+      ChatService.markAsRead(activeConversation.id);
+    };
+
+    loadMessages();
+
+    // الاستماع الفوري للرسائل بناءً على رقم المحادثة لضمان وصولها وحفظها للجميع
+    const channelName = `realtime-chat-room-${activeConversation.id}`;
+    const realtimeChannel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'messages',
+          filter: `conversation_id=eq.${activeConversation.id}`
+        },
+        (payload) => {
+          const raw = payload.new as any;
+          if (raw) {
+            const newMsg: Message = {
+              id: raw.id,
+              conversation_id: raw.conversation_id,
+              sender_id: raw.sender_id,
+              receiver_id: raw.receiver_id,
+              message_type: raw.message_type || 'text',
+              text: raw.text,
+              media_url: raw.media_url,
+              media_duration: raw.media_duration,
+              is_read: raw.is_read || false,
+              is_delivered: raw.is_delivered ?? true,
+              created_at: raw.created_at,
+            };
+
+            setMessages(prev => {
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
+            ChatService.receiveIncomingMessage(newMsg);
+          }
+        }
+      )
+      .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(realtimeChannel);
     };
-  }, [activeConversation?.id]);
+  }, [activeConversation?.id, currentUser?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -84,40 +130,31 @@ export const ChatScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  const handleSendMessage = async (customText?: string, type: 'text' | 'voice' | 'image' = 'text', mediaUrl?: string, duration?: number) => {
-    if (!activeConversation || !partner) return;
+  const handleSendMessage = async (customText?: string, type: 'text' | 'voice' | 'image' | 'gift' = 'text', mediaUrl?: string, duration?: number) => {
+    if (!activeConversation || !partner || !currentUser) return;
     const textToSend = customText || inputText.trim();
     if (!textToSend && type === 'text') return;
 
-    const newMsg = await ChatService.sendMessage({
-      conversationId: activeConversation.id,
-      receiverId: partner.id,
-      messageType: type,
-      text: textToSend,
-      mediaUrl,
-      mediaDuration: duration,
-    });
+    try {
+      const newMsg = await ChatService.sendMessage({
+        conversationId: activeConversation.id,
+        receiverId: partner.id,
+        messageType: type,
+        text: textToSend,
+        mediaUrl,
+        mediaDuration: duration,
+      });
 
-    setMessages(prev => {
-      if (prev.some(m => m.id === newMsg.id)) return prev;
-      return [...prev, newMsg];
-    });
-    setInputText('');
-    setShowEmojiBar(false);
-
-    setIsTyping(true);
-    ChatService.triggerSimulatedReply(
-      activeConversation.id,
-      partner.id,
-      type === 'voice' ? 'voice' : 'default',
-      (reply) => {
-        setIsTyping(false);
-        setMessages(prev => {
-          if (prev.some(m => m.id === reply.id)) return prev;
-          return [...prev, reply];
-        });
-      }
-    );
+      setMessages(prev => {
+        if (prev.some(m => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
+      setInputText('');
+      setShowEmojiBar(false);
+    } catch (error) {
+      console.error('[ChatScreen] Error sending message:', error);
+      showToast(lang === 'ar' ? 'تعذر إرسال الرسالة، تحقق من الاتصال' : 'Failed to send message', 'error');
+    }
   };
 
   const handleSendVoiceNote = () => {
@@ -127,15 +164,23 @@ export const ChatScreen: React.FC = () => {
     showToast('تم إرسال التسجيل الصوتي 🎙️', 'success');
   };
 
-  const handleSendMockPhoto = () => {
-    const samplePhotos = [
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80'
-    ];
-    const photoUrl = samplePhotos[Math.floor(Math.random() * samplePhotos.length)];
-    handleSendMessage('أرسل صورة 📸', 'image', photoUrl);
-    showToast('تمت مشاركة الصورة بنجاح', 'success');
+  // دالة اختيار الصورة من المعرض وإرسالها
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    showToast(lang === 'ar' ? 'جاري إرسال الصورة...' : 'Sending image...', 'info');
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64Url = event.target?.result as string;
+      await handleSendMessage(lang === 'ar' ? 'أرسل صورة 📸' : 'Sent an image 📸', 'image', base64Url);
+      showToast(lang === 'ar' ? 'تم إرسال الصورة بنجاح' : 'Image sent successfully', 'success');
+    };
+    reader.readAsDataURL(file);
+    
+    // إعادة تعيين الحقل لتمكين اختيار نفس الصورة مرة أخرى إذا دعت الحاجة
+    e.target.value = '';
   };
 
   const toggleAudioPlay = (msgId: string) => {
@@ -147,15 +192,12 @@ export const ChatScreen: React.FC = () => {
     }
   };
 
-  // شاشة عرض المحادثات أو تبويب الأصدقاء (Contacts) مع التصميم المماثل تماماً لـ SUGO
   if (!activeConversation) {
     return (
-      <div className="fixed inset-0 z-40 bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-white select-none transition-colors">
+      <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white select-none pb-24">
         
-        {/* تصميم الشريط العلوي المطابق تماماً للصور (Messages / Contacts + Search + Add Menu) */}
-        <div className="px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm z-30">
-          
-          {/* التبويبات العلوية */}
+        {/* الشريط العلوي للتبويبات وخيارات الإدارة */}
+        <div className="px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm z-30 sticky top-0">
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setActiveTab('chats')}
@@ -182,7 +224,6 @@ export const ChatScreen: React.FC = () => {
             </button>
           </div>
 
-          {/* أيقونات البحث والقائمة المنسدلة (Add / Options) */}
           <div className="flex items-center gap-3 relative">
             <button 
               onClick={() => setActiveTab('friends')}
@@ -201,7 +242,6 @@ export const ChatScreen: React.FC = () => {
                 <Menu className="w-5 h-5" />
               </button>
 
-              {/* القائمة المنبثقة المطابقة للصورة تماماً */}
               {showAddMenu && (
                 <div className="absolute end-0 top-12 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 z-50 text-xs font-semibold">
                   <button
@@ -238,14 +278,119 @@ export const ChatScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* محتوى الشاشة بناءً على التبويب المختار */}
-        <div className="flex-1 overflow-y-auto">
-          {activeTab === 'chats' ? (
-            <div className="p-6 text-center text-slate-400 text-xs">
-              {lang === 'ar' ? 'اختر محادثة لبدء الدردشة' : 'Select a conversation to start chatting'}
+        {activeTab === 'chats' ? (
+          <div className="p-4 space-y-3">
+            <div className="relative mb-4">
+              <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={lang === 'ar' ? 'ابحث في المحادثات والمطابقات ...' : 'Search conversations...'}
+                className="w-full py-2.5 ps-10 pe-4 rounded-2xl bg-slate-200/70 dark:bg-slate-900 border border-slate-300/50 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
             </div>
-          ) : (
-            currentUser && (
+
+            <div 
+              onClick={() => setNotificationsOpen(true)}
+              className="p-3.5 rounded-2xl bg-purple-600/10 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/50 flex items-center gap-3 cursor-pointer hover:scale-[1.01] transition relative"
+            >
+              <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md relative">
+                <Bell className="w-5 h-5" />
+                {unreadNotifsCount > 0 && (
+                  <span className="absolute -top-1 -end-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-bold flex items-center justify-center">
+                    {unreadNotifsCount}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-purple-900 dark:text-purple-200">Interaction notifications</h4>
+                  <span className="text-[10px] text-slate-400">الآن</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate mt-0.5">
+                  {unreadNotifsCount > 0 ? `لديك ${unreadNotifsCount} إشعارات تفاعل جديدة بانتظارك` : "You're invited to become a Super Admin..."}
+                </p>
+              </div>
+              {unreadNotifsCount > 0 ? (
+                <span className="min-w-[20px] h-5 px-1.5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadNotifsCount}
+                </span>
+              ) : (
+                <span className="w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">1</span>
+              )}
+            </div>
+
+            <div 
+              onClick={() => showToast('غرفة الدردشة الفعالة', 'info')}
+              className="p-3.5 rounded-2xl bg-emerald-600/10 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 flex items-center gap-3 cursor-pointer hover:scale-[1.01] transition"
+            >
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-emerald-900 dark:text-emerald-200">My chat room</h4>
+                  <span className="text-[10px] text-slate-400">17:00</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate mt-0.5">The rooms you joined are active</p>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <div className="flex items-center justify-between px-1 mb-2 text-xs font-bold text-slate-400">
+                <span>MESSAGES TITLE</span>
+                <span>{conversations.length} محادثات</span>
+              </div>
+
+              {conversations.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  {lang === 'ar' ? 'لا توجد محادثات حالياً' : 'No conversations yet'}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {conversations.map((conv) => (
+                    <div
+                      key={conv.id}
+                      onClick={() => setActiveConversation(conv)}
+                      className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition cursor-pointer shadow-sm"
+                    >
+                      <Avatar
+                        src={conv.partner?.profile_photo}
+                        name={conv.partner?.display_name || 'User'}
+                        size="md"
+                        isOnline={conv.partner?.is_online}
+                        isVerified={conv.partner?.is_verified}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-xs font-bold truncate text-slate-900 dark:text-white flex items-center gap-1">
+                            <span>{conv.partner?.display_name}</span>
+                          </h4>
+                          <span className="text-[10px] text-slate-400">
+                            {conv.updated_at ? new Date(conv.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'AM 04:42'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {typeof conv.last_message === 'string' 
+                            ? conv.last_message 
+                            : (conv.last_message as any)?.text || (lang === 'ar' ? 'ابدأ المحادثة الآن...' : 'Start chatting now...')}
+                        </p>
+                      </div>
+                      {conv.unread_count ? (
+                        <span className="min-w-[20px] h-5 px-1.5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {conv.unread_count}
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          currentUser && (
+            <div className="flex-1 overflow-y-auto">
               <FriendsTab 
                 currentUserId={currentUser.id} 
                 onStartChat={(friend: User) => {
@@ -258,9 +403,9 @@ export const ChatScreen: React.FC = () => {
                   });
                 }} 
               />
-            )
-          )}
-        </div>
+            </div>
+          )
+        )}
       </div>
     );
   }
@@ -534,8 +679,16 @@ export const ChatScreen: React.FC = () => {
           <GiftIcon className="w-5 h-5" />
         </button>
 
+        {/* حقل ملفات مخفي لفتح المعرض */}
+        <input 
+          type="file" 
+          accept="image/*" 
+          className="hidden" 
+          ref={fileInputRef} 
+          onChange={handleImageSelect} 
+        />
         <button
-          onClick={handleSendMockPhoto}
+          onClick={() => fileInputRef.current?.click()}
           className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
           title="Attach Image"
         >

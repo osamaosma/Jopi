@@ -36,7 +36,7 @@ export const BottomNav: React.FC = () => {
       badge: totalUnreadMessages,
     },
     {
-      id: 'wallet', // نستخدم معرف wallet برمجياً لللحظات
+      id: 'moments', // تم التعديل هنا إلى moments لحل مشكلة التداخل
       label: lang === 'ar' ? 'اللحظات' : 'Moments',
       icon: <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" />,
     },

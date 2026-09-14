@@ -51,7 +51,6 @@ export interface User {
   updated_at: string;
 }
 
-// --- تصدير نموذج طلبات الصداقة والأصدقاء بشكل صريح ---
 export interface FriendRequest {
   id: string;
   sender_id: string;
@@ -256,7 +255,6 @@ export interface AdminStats {
   verified_users: number;
 }
 
-// Voice & Video Party Rooms
 export type RoomCategory = 'all' | 'chat' | 'music' | 'gaming' | 'dating' | 'friendship';
 export type RoomStageType = 'audio' | 'video';
 
@@ -286,6 +284,8 @@ export interface VoiceRoom {
   seats: RoomSeat[];
   tags: string[];
   top_fans?: User[];
+  admins?: string[]; 
+  members?: User[]; 
   created_at: string;
 }
 

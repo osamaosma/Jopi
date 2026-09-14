@@ -1,5 +1,5 @@
 // ============================================================================
-// Jopi Friends Tab (Clean, Localized, Production Ready with Add Friend Feature)
+// Jopi Friends Tab (Fixed Separate Query for Pending Requests)
 // ============================================================================
 
 import React, { useEffect, useState } from 'react';
@@ -8,6 +8,7 @@ import { FriendService } from '../../services/friendService';
 import { UserCheck, UserX, MessageCircle, UserPlus, Search } from 'lucide-react';
 import { useLang } from '../../context/LangContext';
 import { useApp } from '../../context/AppContext';
+import { supabase } from '../../services/supabaseClient';
 
 interface FriendsTabProps {
   currentUserId: string;
@@ -24,16 +25,43 @@ export const FriendsTab: React.FC<FriendsTabProps> = ({ currentUserId, onStartCh
   const [isSearching, setIsSearching] = useState(false);
 
   const { lang } = useLang();
-  const { showToast } = useApp();
+  const { showToast, setViewingUser } = useApp();
 
   const loadData = async () => {
     setLoading(true);
     try {
       const fetchedFriends = (await FriendService.getFriends(currentUserId)) as unknown as User[];
-      const fetchedRequests = (await FriendService.getPendingRequests()) as unknown as FriendRequest[];
       
+      // 1. جلب الطلبات المعلقة الخاصة بالمستخدم الحالي كمستقبل
+      const { data: rawRequests, error: reqError } = await supabase
+        .from('friend_requests')
+        .select('*')
+        .eq('receiver_id', currentUserId)
+        .eq('status', 'pending');
+
+      if (reqError) {
+        console.error('Error fetching requests:', reqError);
+      }
+
+      // 2. جلب بيانات المرسل لكل طلب بشكل منفصل لضمان ظهور الاسم والصورة بدقة
+      const formattedRequests: FriendRequest[] = [];
+      if (rawRequests) {
+        for (const req of rawRequests) {
+          const { data: senderData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', req.sender_id)
+            .maybeSingle();
+
+          formattedRequests.push({
+            ...req,
+            sender: senderData || undefined
+          });
+        }
+      }
+
       setFriends(fetchedFriends || []);
-      setPendingRequests(fetchedRequests || []);
+      setPendingRequests(formattedRequests);
     } catch (error) {
       console.error('Error loading friends data:', error);
     } finally {
@@ -62,33 +90,49 @@ export const FriendsTab: React.FC<FriendsTabProps> = ({ currentUserId, onStartCh
     }
   };
 
-  // دالة إرسال طلب الصداقة عبر الـ ID بالاستعانة بالخدمة الحقيقية
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchId.trim() || !currentUserId) return;
 
     setIsSearching(true);
     try {
-      let success = false;
-      
-      if (typeof FriendService.sendFriendRequestByCustomId === 'function') {
-        success = await FriendService.sendFriendRequestByCustomId(currentUserId, searchId.trim());
-      } else if (typeof (FriendService as any).sendRequest === 'function') {
-        success = await (FriendService as any).sendRequest(currentUserId, searchId.trim());
-      } else {
-        success = true; 
+      const targetCustomId = searchId.trim();
+      showToast(lang === 'ar' ? 'جاري البحث عن المستخدم...' : 'Searching for user...', 'info');
+
+      const { data: targetUser, error: searchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('custom_id', targetCustomId)
+        .maybeSingle();
+
+      if (searchError || !targetUser) {
+        showToast(lang === 'ar' ? `لم يتم العثور على مستخدم بالمعرف: ${targetCustomId}` : `User not found with ID: ${targetCustomId}`, 'error');
+        setIsSearching(false);
+        return;
       }
 
-      if (success) {
-        showToast(lang === 'ar' ? 'تم إرسال طلب الصداقة بنجاح 🚀' : 'Friend request sent successfully 🚀', 'success');
+      if (targetUser.id === currentUserId) {
+        showToast(lang === 'ar' ? 'لا يمكنك إضافة نفسك كصديق!' : 'You cannot add yourself!', 'warning');
+        setIsSearching(false);
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from('friend_requests')
+        .insert([
+          { sender_id: currentUserId, receiver_id: targetUser.id, status: 'pending' }
+        ]);
+
+      if (insertError) {
+        showToast(lang === 'ar' ? 'تم إرسال طلب مسبقاً لهذا المستخدم' : 'Request already sent to this user', 'info');
+      } else {
+        showToast(lang === 'ar' ? `تم إرسال طلب الصداقة إلى ${targetUser.display_name || 'المستخدم'} بنجاح! 🚀` : 'Friend request sent successfully! 🚀', 'success');
         setSearchId('');
         loadData();
-      } else {
-        showToast(lang === 'ar' ? 'لم يتم العثور على المستخدم بهذا الـ ID' : 'User not found with this ID', 'error');
       }
     } catch (error) {
       console.error('Send request error:', error);
-      showToast(lang === 'ar' ? 'حدث خطأ أثناء إرسال الطلب' : 'Error sending request', 'error');
+      showToast(lang === 'ar' ? 'حدث خطأ غير متوقع أثناء الإرسال' : 'Unexpected error occurred', 'error');
     } finally {
       setIsSearching(false);
     }
@@ -133,7 +177,7 @@ export const FriendsTab: React.FC<FriendsTabProps> = ({ currentUserId, onStartCh
         </form>
       </div>
 
-      {/* طلبات الصداقة المعلقة */}
+      {/* طلبات الصداقة الواردة */}
       {pendingRequests.length > 0 && (
         <div className="space-y-3">
           <h4 className="text-xs font-black text-rose-500 uppercase tracking-wider">
@@ -142,20 +186,25 @@ export const FriendsTab: React.FC<FriendsTabProps> = ({ currentUserId, onStartCh
           <div className="space-y-2">
             {pendingRequests.map((req) => (
               <div key={req.id} className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm">
-                <div className="flex items-center gap-3">
+                
+                <div 
+                  onClick={() => req.sender && setViewingUser(req.sender)}
+                  className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0"
+                >
                   <img 
                     src={req.sender?.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'} 
                     alt="Avatar" 
-                    className="w-10 h-10 rounded-full object-cover border border-brand-500"
+                    className="w-10 h-10 rounded-full object-cover border border-brand-500 group-hover:scale-105 transition"
                   />
-                  <div>
-                    <h5 className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                      {req.sender?.display_name || (lang === 'ar' ? 'مستخدم' : 'User')}
+                  <div className="min-w-0">
+                    <h5 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-brand-500 transition">
+                      {req.sender?.display_name || (lang === 'ar' ? 'مستخدم جديد' : 'New User')}
                     </h5>
-                    <span className="text-[10px] text-slate-400 font-mono">ID: {req.sender?.custom_id}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">ID: {req.sender?.custom_id || '---'}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
+
+                <div className="flex items-center gap-1.5 ms-2">
                   <button 
                     onClick={() => handleResponse(req.id, true)}
                     className="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition cursor-pointer"
@@ -197,20 +246,23 @@ export const FriendsTab: React.FC<FriendsTabProps> = ({ currentUserId, onStartCh
           <div className="space-y-2">
             {friends.map((friend) => (
               <div key={friend.id} className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:border-brand-500/50 transition">
-                <div className="flex items-center gap-3">
+                <div 
+                  onClick={() => setViewingUser(friend)}
+                  className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0"
+                >
                   <div className="relative">
                     <img 
                       src={friend.profile_photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'} 
                       alt="Avatar" 
-                      className="w-11 h-11 rounded-full object-cover"
+                      className="w-11 h-11 rounded-full object-cover group-hover:scale-105 transition"
                     />
                     {friend.is_online && (
                       <span className="absolute bottom-0 end-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
                     )}
                   </div>
-                  <div>
-                    <h5 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1">
-                      <span>{friend.display_name}</span>
+                  <div className="min-w-0">
+                    <h5 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1 group-hover:text-brand-500 transition">
+                      <span className="truncate">{friend.display_name}</span>
                       {friend.is_verified && <span className="text-brand-500 text-[10px]">✓</span>}
                     </h5>
                     <p className="text-[10px] text-slate-500 truncate max-w-[150px]">
@@ -221,7 +273,7 @@ export const FriendsTab: React.FC<FriendsTabProps> = ({ currentUserId, onStartCh
 
                 <button 
                   onClick={() => onStartChat(friend)}
-                  className="px-3 py-2 rounded-xl bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 hover:bg-brand-600 hover:text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  className="px-3 py-2 rounded-xl bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 hover:bg-brand-600 hover:text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer ms-2"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                   <span>{lang === 'ar' ? 'مراسلة' : 'Chat'}</span>

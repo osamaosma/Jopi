@@ -144,15 +144,17 @@ export class WalletService {
       return { success: false, newBalance: this.getCoinBalance(), error: 'User not found' };
     }
 
+    // مطابقة تامة مع باقات المتجر الذهبي الفاخر (مع دعم الباقات الصندوقية والكبيرة)
     const dynamicPackagesMap: Record<string, { coins: number; bonus: number }> = {
-      'p1': { coins: 600, bonus: 0 },
-      'p2': { coins: 1200, bonus: 0 },
-      'p3': { coins: 2400, bonus: 0 },
-      'p4': { coins: 6250, bonus: 250 },
-      'p5': { coins: 12500, bonus: 600 },
-      'p6': { coins: 37500, bonus: 2000 },
-      'p7': { coins: 65000, bonus: 5000 },
-      'p8': { coins: 130000, bonus: 12000 },
+      'p1': { coins: 32000, bonus: 3200 },
+      'p2': { coins: 264000, bonus: 26400 },
+      'p3': { coins: 560000, bonus: 56000 },
+      'p4': { coins: 1740000, bonus: 174000 },
+      'p5': { coins: 3040000, bonus: 304000 },
+      'p6': { coins: 6108000, bonus: 610800 },
+      'p7': { coins: 18428000, bonus: 1842800 },
+      'p8': { coins: 30556000, bonus: 3055600 },
+      'p9': { coins: 61508000, bonus: 6150800 },
     };
 
     const selectedPkg = dynamicPackagesMap[packageId] || MOCK_COIN_PACKAGES.find(p => p.id === packageId);
@@ -161,7 +163,7 @@ export class WalletService {
       return { success: false, newBalance: this.getCoinBalance(), error: 'Package not found' };
     }
 
-    const coinsCount = 'coins' in selectedPkg ? selectedPkg.coins : 600;
+    const coinsCount = 'coins' in selectedPkg ? selectedPkg.coins : 32000;
     const bonusCount = 'bonus' in selectedPkg ? (selectedPkg as any).bonus : ('bonus_coins' in selectedPkg ? (selectedPkg as any).bonus_coins : 0);
 
     const totalCoinsToAdd = coinsCount + bonusCount;

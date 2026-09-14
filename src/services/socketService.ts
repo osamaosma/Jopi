@@ -13,10 +13,15 @@ class SocketService {
   private socket: Socket | null = null;
   private isConnected = false;
   private supabaseChannel: any = null;
+  // قناة البث (Broadcast) الاحتياطية للمكالمات في حال تعطل Socket.io
+  private callSignalChannel: any = null;
+  private currentUserId: string | null = null;
 
   public init(user: User) {
+    this.currentUserId = user.id;
     // 1. Initialize Supabase Realtime Database Listeners
     this.initSupabaseRealtime(user.id);
+    this.initSupabaseCallSignals(user.id);
 
     if (this.socket && this.isConnected) {
       this.socket.emit('USER_ONLINE', user);
@@ -93,6 +98,52 @@ class SocketService {
       )
       .subscribe();
   }
+
+  // --- دوال الاتصال الاحتياطية (Supabase Broadcast) للمكالمات ---
+  private initSupabaseCallSignals(userId: string) {
+    if (this.callSignalChannel) {
+      supabase.removeChannel(this.callSignalChannel);
+    }
+
+    this.callSignalChannel = supabase.channel(`call_signal_${userId}`);
+    
+    this.callSignalChannel
+      .on('broadcast', { event: 'INCOMING_CALL' }, (payload: any) => {
+        // التأكد من عدم استقبال المكالمة إذا كنت أنت من قام بإرسالها لنفسك
+        if (payload.payload?.caller?.id === this.currentUserId) return;
+        if (this.incomingCallCallback) this.incomingCallCallback(payload.payload);
+      })
+      .on('broadcast', { event: 'CALL_ACCEPTED' }, (payload: any) => {
+        if (this.callConnectedCallback) this.callConnectedCallback(payload.payload);
+      })
+      .on('broadcast', { event: 'CALL_REJECTED' }, () => {
+        if (this.callTerminatedCallback) this.callTerminatedCallback();
+      })
+      .on('broadcast', { event: 'CALL_ENDED' }, () => {
+        if (this.callTerminatedCallback) this.callTerminatedCallback();
+      })
+      .subscribe();
+  }
+
+  private broadcastSignal(targetId: string, eventName: string, payload: any = {}) {
+    const channelName = `call_signal_${targetId}`;
+    const channel = supabase.channel(channelName);
+    
+    // الانتظار حتى يتم الاتصال بالقناة قبل إرسال الإشارة (يمنع تحذيرات REST API)
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: eventName,
+          payload: payload
+        }).then(() => {
+          // إغلاق قناة الإرسال المؤقتة بعد ثانية لتنظيف الموارد
+          setTimeout(() => supabase.removeChannel(channel), 1000);
+        });
+      }
+    });
+  }
+  // ---------------------------------------------------------------
 
   public getSocket(): Socket | null {
     return this.socket;
@@ -197,42 +248,65 @@ class SocketService {
     this.socket?.on('ROOM_GIFT_EXPLOSION', callback);
   }
 
-  // --- WebRTC Calls ---
+  // --- WebRTC Calls (Fixed with Supabase Broadcast Fallback) ---
+  private incomingCallCallback: ((data: { caller: User; callType: 'voice' | 'video' }) => void) | null = null;
+  private callConnectedCallback: ((data: { receiver: User }) => void) | null = null;
+  private callTerminatedCallback: (() => void) | null = null;
+
   public initiateCall(targetUserId: string, caller: User, callType: 'voice' | 'video') {
     try {
-      this.socket?.emit('CALL_USER', { targetUserId, caller, callType });
+      if (this.socket && this.isConnected) {
+        this.socket.emit('CALL_USER', { targetUserId, caller, callType });
+      } else {
+        this.broadcastSignal(targetUserId, 'INCOMING_CALL', { caller, callType });
+      }
     } catch (e) {}
   }
 
   public acceptCall(callerId: string, receiver: User) {
     try {
-      this.socket?.emit('CALL_ACCEPTED', { callerId, receiver });
+      if (this.socket && this.isConnected) {
+        this.socket.emit('CALL_ACCEPTED', { callerId, receiver });
+      } else {
+        this.broadcastSignal(callerId, 'CALL_ACCEPTED', { receiver });
+      }
     } catch (e) {}
   }
 
   public rejectCall(callerId: string) {
     try {
-      this.socket?.emit('CALL_REJECTED', { callerId });
+      if (this.socket && this.isConnected) {
+        this.socket.emit('CALL_REJECTED', { callerId });
+      } else {
+        this.broadcastSignal(callerId, 'CALL_REJECTED');
+      }
     } catch (e) {}
   }
 
   public endCall(targetUserId: string) {
     try {
-      this.socket?.emit('CALL_ENDED', { targetUserId });
+      if (this.socket && this.isConnected) {
+        this.socket.emit('CALL_ENDED', { targetUserId });
+      } else {
+        this.broadcastSignal(targetUserId, 'CALL_ENDED');
+      }
     } catch (e) {}
   }
 
   public onIncomingCall(callback: (data: { caller: User; callType: 'voice' | 'video' }) => void) {
+    this.incomingCallCallback = callback;
     this.socket?.off('INCOMING_CALL');
     this.socket?.on('INCOMING_CALL', callback);
   }
 
   public onCallConnected(callback: (data: { receiver: User }) => void) {
+    this.callConnectedCallback = callback;
     this.socket?.off('CALL_CONNECTED');
     this.socket?.on('CALL_CONNECTED', callback);
   }
 
   public onCallTerminated(callback: () => void) {
+    this.callTerminatedCallback = callback;
     this.socket?.off('CALL_TERMINATED');
     this.socket?.on('CALL_TERMINATED', callback);
   }

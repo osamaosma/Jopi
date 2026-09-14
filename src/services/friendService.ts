@@ -1,5 +1,5 @@
 // ============================================================================
-// Jopi Friend Service (Supabase Cloud Sync for Friendships & Requests)
+// Jopi Friend Service (Supabase Cloud Sync - Fully Corrected to 'users' table)
 // ============================================================================
 
 import { supabase } from './supabaseClient';
@@ -58,9 +58,9 @@ export class FriendService {
   static async sendFriendRequestByCustomId(currentUserId: string, targetCustomId: string): Promise<boolean> {
     try {
       const { data: targetUser, error: searchError } = await supabase
-        .from('profiles')
+        .from('users')
         .select('id')
-        .or(`custom_id.eq.${targetCustomId},id.eq.${targetCustomId}`)
+        .or(`username.eq.${targetCustomId},id.eq.${targetCustomId}`)
         .maybeSingle();
 
       if (searchError || !targetUser) {
@@ -118,7 +118,7 @@ export class FriendService {
     const requestsWithSenders: FriendRequest[] = [];
     for (const req of data) {
       const { data: senderProfile } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('id', req.sender_id)
         .single();
@@ -147,8 +147,10 @@ export class FriendService {
     return true;
   }
 
-  // جلب قائمة الأصدقاء المقبولين للمستخدم الحالي
+  // جلب قائمة الأصدقاء المقبولين للمستخدم الحالي من جدول users
   static async getFriends(userId: string): Promise<User[]> {
+    if (!userId) return [];
+    
     const { data, error } = await supabase
       .from('friend_requests')
       .select('sender_id, receiver_id')
@@ -161,7 +163,7 @@ export class FriendService {
     if (friendIds.length === 0) return [];
 
     const { data: profiles, error: profileError } = await supabase
-      .from('profiles')
+      .from('users')
       .select('*')
       .in('id', friendIds);
 
