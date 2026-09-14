@@ -67,9 +67,9 @@ class SocketService {
       supabase.removeChannel(this.supabaseChannel);
     }
 
-    // Listen to real-time database insertions in Supabase for messages and gifts
+    // الاستماع الشامل والدايم لجميع الرسائل الموجهة لك في الخلفية لضمان عدم ضياع أي محادثة
     this.supabaseChannel = supabase
-      .channel('jopi-realtime-db-changes')
+      .channel(`global-jopi-user-listener-${userId}`)
       .on(
         'postgres_changes',
         {
@@ -79,24 +79,30 @@ class SocketService {
           filter: `receiver_id=eq.${userId}`,
         },
         (payload) => {
-          const newRow = payload.new;
-          const incomingMessage: Message = {
-            id: newRow.id,
-            conversation_id: newRow.conversation_id,
-            sender_id: newRow.sender_id,
-            receiver_id: newRow.receiver_id,
-            message_type: newRow.message_type || 'text',
-            text: newRow.content,
-            media_url: newRow.media_url,
-            is_read: false,
-            is_delivered: true,
-            created_at: newRow.created_at,
-          };
+          const newRow = payload.new as any;
+          if (newRow) {
+            const incomingMessage: Message = {
+              id: newRow.id,
+              conversation_id: newRow.conversation_id,
+              sender_id: newRow.sender_id,
+              receiver_id: newRow.receiver_id,
+              message_type: newRow.message_type || 'text',
+              text: newRow.text || newRow.content,
+              media_url: newRow.media_url,
+              media_duration: newRow.media_duration,
+              is_read: false,
+              is_delivered: true,
+              created_at: newRow.created_at,
+            };
 
-          ChatService.receiveIncomingMessage(incomingMessage);
+            // حفظ الرسالة وتحديث قائمة المحادثات والإشعارات فوراً حتى لو كنت خارج المحادثة
+            ChatService.receiveIncomingMessage(incomingMessage);
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[SocketService] Global Realtime status:', status);
+      });
   }
 
   // --- دوال الاتصال الاحتياطية (Supabase Broadcast) للمكالمات ---

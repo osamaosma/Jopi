@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Message, Conversation, User } from '../../types';
 import { ChatService } from '../../services/chatService';
+import { StorageService, STORAGE_KEYS } from '../../services/storageService';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
@@ -51,60 +52,108 @@ export const ChatScreen: React.FC = () => {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null); // مرجع مخفي لفتح معرض الصور
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const partner = activeConversation?.partner;
 
+  // الحفاظ على المحادثة الحالية وتثبيتها محلياً حتى لا تفقد عند الرجوع
   useEffect(() => {
+    if (activeConversation && partner) {
+      const convs = StorageService.get<Conversation[]>(STORAGE_KEYS.CONVERSATIONS, []);
+      const index = convs.findIndex(c => c.id === activeConversation.id || c.partner?.id === partner.id);
+      if (index >= 0) {
+        convs[index] = { 
+          ...convs[index], 
+          partner: { ...convs[index].partner, ...partner },
+          unread_count: 0, 
+          updated_at: new Date().toISOString() 
+        };
+      } else {
+        convs.unshift({
+          id: activeConversation.id,
+          partner: partner,
+          unread_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+      StorageService.set(STORAGE_KEYS.CONVERSATIONS, convs);
+    }
     setConversations(ChatService.getConversations());
-  }, []);
+  }, [activeConversation]);
 
-  // تفعيل الاتصال اللحظي الفوري (Realtime) وإصلاح مشكلة وصول الرسائل
-useEffect(() => {
+  // تفعيل الاتصال اللحظي الفوري مع الاستماع للرسائل وتحديث القراءة (UPDATE) وفرز زمني تصاعدي
+  useEffect(() => {
     if (!activeConversation || !currentUser) return;
+    const currentPartner = activeConversation.partner;
 
     const loadMessages = async () => {
       const msgs = await ChatService.getMessages(activeConversation.id);
-      setMessages(msgs);
+      // فرز زمني صارم: الرسائل القديمة في الأعلى والجديدة في الأسفل
+      const sorted = [...msgs].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      setMessages(sorted);
+      // تحديث حالة القراءة في السيرفر والمحلي عند فتح المحادثة
       ChatService.markAsRead(activeConversation.id);
     };
 
     loadMessages();
 
-    // الاستماع الفوري للرسائل بناءً على رقم المحادثة لضمان وصولها وحفظها للجميع
-    const channelName = `realtime-chat-room-${activeConversation.id}`;
+    const channelName = `realtime-chat-sync-${activeConversation.id}-${currentUser.id}-${Date.now()}`;
     const realtimeChannel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
         { 
-          event: 'INSERT', 
+          event: '*', // الاستماع للـ INSERT والـ UPDATE معاً
           schema: 'public', 
-          table: 'messages',
-          filter: `conversation_id=eq.${activeConversation.id}`
+          table: 'messages'
         },
         (payload) => {
           const raw = payload.new as any;
-          if (raw) {
-            const newMsg: Message = {
-              id: raw.id,
-              conversation_id: raw.conversation_id,
-              sender_id: raw.sender_id,
-              receiver_id: raw.receiver_id,
-              message_type: raw.message_type || 'text',
-              text: raw.text,
-              media_url: raw.media_url,
-              media_duration: raw.media_duration,
-              is_read: raw.is_read || false,
-              is_delivered: raw.is_delivered ?? true,
-              created_at: raw.created_at,
-            };
+          if (!raw) return;
 
-            setMessages(prev => {
-              if (prev.some(m => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
-            });
-            ChatService.receiveIncomingMessage(newMsg);
+          const isOurChat = 
+            (raw.sender_id === currentUser.id && raw.receiver_id === currentPartner?.id) ||
+            (raw.sender_id === currentPartner?.id && raw.receiver_id === currentUser.id) ||
+            raw.conversation_id === activeConversation.id;
+
+          if (!isOurChat) return;
+
+          const formattedMsg: Message = {
+            id: raw.id,
+            conversation_id: raw.conversation_id,
+            sender_id: raw.sender_id,
+            receiver_id: raw.receiver_id,
+            message_type: raw.message_type || 'text',
+            text: raw.text || raw.content,
+            media_url: raw.media_url,
+            media_duration: raw.media_duration,
+            is_read: raw.is_read ?? false,
+            is_delivered: raw.is_delivered ?? true,
+            created_at: raw.created_at,
+          };
+
+          // تحديث حالة الرسالة إذا قرأها الطرف الآخر (تحول الصح للأزرق)
+          if (payload.eventType === 'UPDATE') {
+            setMessages(prev => prev.map(m => m.id === formattedMsg.id ? { ...m, is_read: formattedMsg.is_read } : m));
+            return;
           }
+
+          // إضافة الرسالة الجديدة مع ترتيبها في أسفل المحادثة
+          setMessages(prev => {
+            if (prev.some(m => m.id === formattedMsg.id)) {
+              return prev.map(m => m.id === formattedMsg.id ? formattedMsg : m);
+            }
+            const updated = [...prev, formattedMsg];
+            return updated.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          });
+
+          // إذا كانت الرسالة واردة لك وأنت داخل الشاشة، اجعلها مقروءة فوراً
+          if (formattedMsg.receiver_id === currentUser.id) {
+            ChatService.markAsRead(activeConversation.id);
+          } else {
+            ChatService.receiveIncomingMessage(formattedMsg);
+          }
+          setConversations(ChatService.getConversations());
         }
       )
       .subscribe();
@@ -143,12 +192,15 @@ useEffect(() => {
         text: textToSend,
         mediaUrl,
         mediaDuration: duration,
+        partnerProfile: partner,
       });
 
       setMessages(prev => {
         if (prev.some(m => m.id === newMsg.id)) return prev;
-        return [...prev, newMsg];
+        const updated = [...prev, newMsg];
+        return updated.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       });
+      setConversations(ChatService.getConversations());
       setInputText('');
       setShowEmojiBar(false);
     } catch (error) {
@@ -164,7 +216,6 @@ useEffect(() => {
     showToast('تم إرسال التسجيل الصوتي 🎙️', 'success');
   };
 
-  // دالة اختيار الصورة من المعرض وإرسالها
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -178,8 +229,6 @@ useEffect(() => {
       showToast(lang === 'ar' ? 'تم إرسال الصورة بنجاح' : 'Image sent successfully', 'success');
     };
     reader.readAsDataURL(file);
-    
-    // إعادة تعيين الحقل لتمكين اختيار نفس الصورة مرة أخرى إذا دعت الحاجة
     e.target.value = '';
   };
 
@@ -679,7 +728,6 @@ useEffect(() => {
           <GiftIcon className="w-5 h-5" />
         </button>
 
-        {/* حقل ملفات مخفي لفتح المعرض */}
         <input 
           type="file" 
           accept="image/*" 
