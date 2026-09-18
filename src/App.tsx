@@ -35,6 +35,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 
 // Party Rooms Components
 import { LiveRoomModal, FloatingRoomPlayer } from './components/party/LiveRoomModal';
+import { LiveVideoRoomModal } from './components/party/LiveVideoRoomModal';
 import { CreateRoomModal } from './components/party/CreateRoomModal';
 
 // Modals & Overlays
@@ -49,7 +50,7 @@ import { ReportModal } from './components/settings/BlockedUsersModal';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isOnboarded, user } = useAuth();
-  const { activeTab, activeConversation, setActiveTab } = useApp();
+  const { activeTab, activeConversation, setActiveTab, activeRoom } = useApp();
   const [showSplash, setShowSplash] = useState(false);
   const [authMode, setAuthMode] = useState<'selection' | 'phone'>('selection');
 
@@ -138,7 +139,11 @@ const MainAppContent: React.FC = () => {
       <BottomNav />
 
       {/* Modals & Overlays */}
-      <LiveRoomModal />
+      {((activeRoom as any)?.type === 'video' || (activeRoom as any)?.room_type === 'video') ? (
+        <LiveVideoRoomModal />
+      ) : (
+        <LiveRoomModal />
+      )}
       <CreateRoomModal />
       <FloatingRoomPlayer />
       <MatchCelebrationModal />

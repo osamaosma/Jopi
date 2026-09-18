@@ -20,7 +20,7 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true, // تم تصحيحها لتمكين التطبيق من التقاط توكن جوجل من الابط
-      storage: window.localStorage,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
   }
 );

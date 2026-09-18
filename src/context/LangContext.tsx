@@ -1,8 +1,3 @@
-// ============================================================================
-// jopi Global 9-Language Localization Context
-// Full support for AR (RTL), UR (RTL), EN, FR, ES, TR, DE, RU, and ID
-// ============================================================================
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { StorageService, STORAGE_KEYS } from '../services/storageService';
 
@@ -295,9 +290,29 @@ const LangContext = createContext<LangContextType | undefined>(undefined);
 
 export const LangProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<Language>(() => {
-    const settings = StorageService.get<any>(STORAGE_KEYS.USER_SETTINGS, null);
     const validCodes: Language[] = ['ar', 'ur', 'en', 'fr', 'es', 'tr', 'de', 'ru', 'id'];
-    return (validCodes.includes(settings?.language) ? settings.language : 'ar') as Language;
+    
+    // 1. التحقق من إعدادات المستخدم المحفوظة مسبقاً
+    const settings = StorageService.get<any>(STORAGE_KEYS.USER_SETTINGS, null);
+    if (validCodes.includes(settings?.language)) {
+      return settings.language as Language;
+    }
+
+    const localLang = localStorage.getItem('jopi_lang') as Language;
+    if (validCodes.includes(localLang)) {
+      return localLang;
+    }
+
+    // 2. الكشف التلقائي عن لغة هاتف المستخدم عند التشغيل لأول مرة
+    if (typeof window !== 'undefined' && navigator.language) {
+      const browserLang = navigator.language.slice(0, 2) as Language;
+      if (validCodes.includes(browserLang)) {
+        return browserLang;
+      }
+    }
+
+    // 3. القيمة الافتراضية إذا لم تتطابق أي لغة
+    return 'ar';
   });
 
   const currentLanguageOption = AVAILABLE_LANGUAGES.find(l => l.code === lang) || AVAILABLE_LANGUAGES[0];
@@ -305,6 +320,9 @@ export const LangProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const setLang = (newLang: Language) => {
     setLangState(newLang);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jopi_lang', newLang);
+    }
     const settings = StorageService.get<any>(STORAGE_KEYS.USER_SETTINGS, {});
     StorageService.set(STORAGE_KEYS.USER_SETTINGS, { ...settings, language: newLang });
   };

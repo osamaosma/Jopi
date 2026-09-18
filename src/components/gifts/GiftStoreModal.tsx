@@ -8,8 +8,10 @@ import { X, Gift as GiftIcon, Coins, Sparkles, Plus, Check, CreditCard } from 'l
 import { Gift } from '../../types';
 import { GiftService } from '../../services/giftService';
 import { ChatService } from '../../services/chatService';
+import { RelationshipService } from '../../services/relationshipService';
 import { useApp } from '../../context/AppContext';
 import { useLang } from '../../context/LangContext';
+import { useAuth } from '../../context/AuthContext';
 import { MOCK_GIFTS } from '../../data/mockData';
 
 // باقات العملات الذهبية المستوحاة من تصميم القطط الفاخر والكميات المطلوبة
@@ -34,6 +36,7 @@ export const GiftStoreModal: React.FC = () => {
     setActiveTab, 
     showToast 
   } = useApp();
+  const { user: currentUser } = useAuth();
   const { t, lang } = useLang();
 
   const [selectedGift, setSelectedGift] = useState<Gift>(MOCK_GIFTS[0]);
@@ -73,6 +76,11 @@ export const GiftStoreModal: React.FC = () => {
 
     if (result.success) {
       refreshWallet();
+
+      // ترقية نقاط الألفة والمستوى وتحقيق أمنيات الإناث فور إرسال الهدية
+      if (currentUser) {
+        RelationshipService.addGiftIntimacyPoints(currentUser.id, targetUser.id, selectedGift);
+      }
 
       if (giftModal.conversationId) {
         try {

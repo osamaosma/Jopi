@@ -92,7 +92,7 @@ export const DiscoverScreen: React.FC = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
-    setActiveTab('messages');
+  setActiveTab('messages');
   };
 
   const handleQuickGift = () => {
@@ -104,7 +104,19 @@ export const DiscoverScreen: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full max-w-md mx-auto h-[calc(100vh-8rem)] flex flex-col justify-between px-3 pt-2 pb-3">
+    <div className="relative w-full max-w-md mx-auto h-[calc(100vh-6rem)] flex flex-col justify-between px-3 pt-2 pb-3">
+      
+      {/* Top Bar with Filter Button */}
+      <div className="w-full flex items-center justify-end px-2 pb-1">
+        <button
+          onClick={() => setFilterModalOpen(true)}
+          className="p-2.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:scale-105 active:scale-95 transition cursor-pointer"
+          title="Filters"
+        >
+          <SlidersHorizontal className="w-5 h-5" />
+        </button>
+      </div>
+
       {/* Cards Deck Container */}
       <div className="relative w-full flex-1 min-h-[460px] max-h-[580px]">
         {loading ? (
