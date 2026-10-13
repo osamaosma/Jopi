@@ -1,0 +1,11 @@
+Model Information:
+* title:	hero_natalia_old_2016
+* source:	https://sketchfab.com/3d-models/hero-natalia-old-2016-5c3c5823b3234ace80e92f735fd12a1b
+* author:	Melberry456 (https://sketchfab.com/Melberry456)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "hero_natalia_old_2016" (https://sketchfab.com/3d-models/hero-natalia-old-2016-5c3c5823b3234ace80e92f735fd12a1b) by Melberry456 (https://sketchfab.com/Melberry456) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

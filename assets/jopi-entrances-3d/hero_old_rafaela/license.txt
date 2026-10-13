@@ -1,0 +1,11 @@
+Model Information:
+* title:	hero_Old_rafaela
+* source:	https://sketchfab.com/3d-models/hero-old-rafaela-6a4c23b865bb46e1869fcfe29adf2999
+* author:	Melberry456 (https://sketchfab.com/Melberry456)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "hero_Old_rafaela" (https://sketchfab.com/3d-models/hero-old-rafaela-6a4c23b865bb46e1869fcfe29adf2999) by Melberry456 (https://sketchfab.com/Melberry456) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
